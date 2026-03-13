@@ -8,7 +8,7 @@ class AddEntryScreen extends StatefulWidget {
 }
 
 class _AddEntryScreenState extends State<AddEntryScreen> {
-  // ── Controllers — like input buffers for each text field ──
+  // ── Logic: Controllers ──
   final _siteController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -16,28 +16,42 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
 
   @override
   void dispose() {
-    // always dispose controllers to free memory
     _siteController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  // ── Logic: Save & Validate ──
   void _onSave() {
-    // trim() removes extra spaces before/after
     final site = _siteController.text.trim();
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
-    // validate — all fields must be filled
     if (site.isEmpty || username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error_outline_rounded, color: Colors.white),
+              SizedBox(width: 12),
+              Text(
+                'Please fill in all fields',
+                style: TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFEF4444), // Red error color
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(20),
+        ),
       );
       return;
     }
 
-    // return data back to MainScreen
     Navigator.pop(context, {
       'siteName': site,
       'username': username,
@@ -48,81 +62,119 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      extendBodyBehindAppBar: true, // Let the gradient flow behind the app bar
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D14),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
         title: const Text(
           'Add Password',
           style: TextStyle(
-            color: Color(0xFFE2E8F0),
-            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFE2E8F0)),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // ── Site name field ──
-            _buildField(
-              controller: _siteController,
-              label: 'Site Name',
-              hint: 'e.g. Google, Netflix',
-              icon: Icons.language,
-            ),
-
-            const SizedBox(height: 16),
-
-            // ── Username field ──
-            _buildField(
-              controller: _usernameController,
-              label: 'Username',
-              hint: 'e.g. john@email.com',
-              icon: Icons.person,
-            ),
-
-            const SizedBox(height: 16),
-
-            // ── Password field ──
-            _buildField(
-              controller: _passwordController,
-              label: 'Password',
-              hint: 'Enter password',
-              icon: Icons.lock,
-              isPassword: true,
-            ),
-
-            const SizedBox(height: 32),
-
-            // ── Save button ──
-            SizedBox(
-              width: double.infinity, // full width
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _onSave,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+      // ── UI: Modern Gradient Background ──
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0F172A), // Slate 900
+              Color(0xFF020617), // Slate 950
+            ],
+          ),
+        ),
+        child: SafeArea(
+          // SingleChildScrollView prevents errors when the keyboard pops up
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Vault Illustration/Icon
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.indigoAccent.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.shield_rounded,
+                      size: 48,
+                      color: Colors.indigoAccent,
+                    ),
                   ),
                 ),
-                child: const Text(
-                  'Save Password',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(height: 32),
+
+                // ── Input Fields ──
+                _buildField(
+                  controller: _siteController,
+                  label: 'Site Name',
+                  hint: 'e.g. Google, Netflix',
+                  icon: Icons.language_rounded,
+                ),
+                const SizedBox(height: 20),
+
+                _buildField(
+                  controller: _usernameController,
+                  label: 'Username / Email',
+                  hint: 'e.g. john@email.com',
+                  icon: Icons.person_rounded,
+                ),
+                const SizedBox(height: 20),
+
+                _buildField(
+                  controller: _passwordController,
+                  label: 'Password',
+                  hint: 'Enter your secure password',
+                  icon: Icons.lock_rounded,
+                  isPassword: true,
+                ),
+                const SizedBox(height: 40),
+
+                // ── Save Button ──
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _onSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigoAccent,
+                      foregroundColor: Colors.white,
+                      elevation: 8,
+                      shadowColor: Colors.indigoAccent.withOpacity(0.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Save Password',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
+  // ── UI: Glassmorphic Input Field ──
   Widget _buildField({
     required TextEditingController controller,
     required String label,
@@ -133,49 +185,65 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF94A3B8),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF94A3B8), // Slate 400
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
         TextField(
           controller: controller,
-          obscureText: isPassword && !_passwordVisible, // hide password chars
-          style: const TextStyle(color: Color(0xFFE2E8F0)),
+          obscureText: isPassword && !_passwordVisible,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF3D3D5C)),
-            prefixIcon: Icon(icon, color: const Color(0xFF6366F1), size: 20),
+            hintStyle: TextStyle(
+              color: const Color(0xFF64748B).withOpacity(0.6),
+            ),
+            prefixIcon: Icon(icon, color: Colors.indigoAccent, size: 22),
             suffixIcon: isPassword
                 ? IconButton(
                     icon: Icon(
                       _passwordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                      color: const Color(0xFF6B7280),
-                      size: 20,
+                          ? Icons.visibility_rounded
+                          : Icons.visibility_off_rounded,
+                      color: const Color(0xFF64748B),
+                      size: 22,
                     ),
                     onPressed: () =>
                         setState(() => _passwordVisible = !_passwordVisible),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
                   )
                 : null,
             filled: true,
-            fillColor: const Color(0xFF13131F),
+            fillColor: Colors.white.withOpacity(0.04), // Glass effect
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 18,
+              horizontal: 16,
+            ),
+            // Default border
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF1E1E2E)),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
             ),
+            // Unfocused border
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF1E1E2E)),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
             ),
+            // Focused border
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF6366F1)),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(
+                color: Colors.indigoAccent,
+                width: 2,
+              ),
             ),
           ),
         ),

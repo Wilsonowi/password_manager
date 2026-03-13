@@ -113,41 +113,37 @@ class _LockScreenState extends State<LockScreen> {
     super.dispose();
   }
 
-  // ── Builds a row of 3 keys ──
+  // ── UI: Keypad Row ──
   Widget _buildKeyRow(List<String> digits) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: digits.asMap().entries.map((e) {
-        return Row(
-          children: [
-            _buildKey(e.value),
-            if (e.key < digits.length - 1) const SizedBox(width: 12),
-          ],
+      children: digits.map((digit) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: _buildKey(digit),
         );
       }).toList(),
     );
   }
 
-  // ── Builds a single key button ──
+  // ── UI: Individual Key ──
   Widget _buildKey(String digit) {
     return SizedBox(
-      width: 80,
-      height: 80,
+      width: 76,
+      height: 76,
       child: TextButton(
         onPressed: () => _onKeyTap(digit),
         style: TextButton.styleFrom(
-          backgroundColor: const Color(0xFF13131F),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF1E1E2E)),
-          ),
+          backgroundColor: Colors.white.withOpacity(0.06), // Translucent look
+          shape: const CircleBorder(), // Circular modern keys
+          foregroundColor: Colors.white,
         ),
         child: Text(
           digit,
           style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFFE2E8F0),
+            fontSize: 28,
+            fontWeight: FontWeight.w400,
+            color: Colors.white,
           ),
         ),
       ),
@@ -157,15 +153,27 @@ class _LockScreenState extends State<LockScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
-      body: SafeArea(
-        child: _isLockedOut ? _buildLockoutView() : _buildNormalView(),
+      // ── UI: Modern Gradient Background ──
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0F172A), // Slate 900
+              Color(0xFF020617), // Slate 950
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: _isLockedOut ? _buildLockoutView() : _buildNormalView(),
+        ),
       ),
     );
   }
 
+  // ── UI: Lockout Screen ──
   Widget _buildLockoutView() {
-    // format seconds into MM:SS
     int minutes = _lockoutRemaining ~/ 60;
     int seconds = _lockoutRemaining % 60;
     String timer = '$minutes:${seconds.toString().padLeft(2, '0')}';
@@ -176,14 +184,34 @@ class _LockScreenState extends State<LockScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('🔒', style: TextStyle(fontSize: 56)),
-            const SizedBox(height: 24),
+            // Glowing Lock Icon
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withOpacity(0.15),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFEF4444).withOpacity(0.2),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.lock_clock_rounded,
+                size: 64,
+                color: Color(0xFFF87171),
+              ),
+            ),
+            const SizedBox(height: 32),
             const Text(
               'App Locked',
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFF87171),
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: 12),
@@ -191,34 +219,21 @@ class _LockScreenState extends State<LockScreen> {
               'Too many incorrect attempts.\nPlease wait before trying again.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-                height: 1.6, // line height, like line-height in CSS
+                fontSize: 15,
+                color: Color(0xFF94A3B8),
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: 32),
-            // timer box
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF130F0F),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF2A1A1A)),
+            const SizedBox(height: 48),
+            // Sleek Timer
+            Text(
+              timer,
+              style: const TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.w300,
+                color: Color(0xFFF87171),
+                letterSpacing: 4,
               ),
-              child: Text(
-                timer,
-                style: const TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w300,
-                  color: Color(0xFFF87171),
-                  letterSpacing: 6,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'App will unlock automatically',
-              style: TextStyle(fontSize: 13, color: Color(0xFF4A4A6A)),
             ),
           ],
         ),
@@ -226,124 +241,131 @@ class _LockScreenState extends State<LockScreen> {
     );
   }
 
+  // ── UI: Normal Keypad Screen ──
   Widget _buildNormalView() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // ── Logo ──
+          // Logo Area
           Container(
-            width: 80,
-            height: 80,
+            width: 70,
+            height: 70,
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E2E),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFF2E2E45)),
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.asset(
-                'assets/logo.png',
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
+              borderRadius: BorderRadius.circular(20),
+              // Make sure to un-comment and use your asset when ready!
+              // child: Image.asset('assets/logo.png', fit: BoxFit.cover),
+              child: const Icon(
+                Icons.security_rounded,
+                size: 36,
+                color: Colors.indigoAccent,
               ),
             ),
           ),
-
-          const SizedBox(height: 16),
-
+          const SizedBox(height: 24),
           const Text(
             'KeySafe',
             style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFE2E8F0),
+              fontSize: 26,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
               letterSpacing: -0.5,
             ),
           ),
-
           const SizedBox(height: 8),
-
           Text(
             _message,
             style: TextStyle(
               fontSize: 14,
+              fontWeight: FontWeight.w500,
               color: _failedAttempts > 0
-                  ? const Color(0xFFF87171) // red if error
-                  : const Color(0xFF6B7280), // grey normally
+                  ? const Color(0xFFF87171)
+                  : const Color(0xFF94A3B8),
             ),
           ),
+          const SizedBox(height: 48),
 
-          const SizedBox(height: 40),
-
-          // ── PIN dots ──
+          // ── PIN Indicators ──
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(4, (i) {
               bool filled = i < _enteredPin.length;
               bool revealed = filled && _revealed[i];
+
               return AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                width: 48,
-                height: 48,
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: filled ? const Color(0xFF6366F1) : Colors.transparent,
+                  color: filled ? Colors.white : Colors.transparent,
                   border: Border.all(
-                    color: filled
-                        ? const Color(0xFF6366F1)
-                        : const Color(0xFF2E2E45),
-                    width: 1.5,
+                    color: filled ? Colors.white : const Color(0xFF475569),
+                    width: 2,
                   ),
+                  boxShadow: filled
+                      ? [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.4),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : [],
                 ),
                 child: Center(
-                  child: Text(
-                    revealed
-                        ? _enteredPin[i]
-                        : filled
-                        ? '●'
-                        : '',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: revealed
+                      ? Text(
+                          _enteredPin[i],
+                          style: const TextStyle(
+                            color: Color(0xFF0F172A), // Dark text on white dot
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
                 ),
               );
             }),
           ),
+          const SizedBox(height: 64),
 
-          const SizedBox(height: 48),
-
-          // ── Keypad ──
+          // ── Keypad Grid ──
           Column(
             children: [
               _buildKeyRow(['1', '2', '3']),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _buildKeyRow(['4', '5', '6']),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _buildKeyRow(['7', '8', '9']),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(width: 80),
-                  const SizedBox(width: 12),
+                  const SizedBox(
+                    width: 76,
+                    height: 76,
+                  ), // Empty space for alignment
+                  const SizedBox(width: 24),
                   _buildKey('0'),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 24),
                   SizedBox(
-                    width: 80,
-                    height: 80,
-                    child: TextButton(
+                    width: 76,
+                    height: 76,
+                    child: IconButton(
                       onPressed: _onDelete,
-                      child: const Icon(
-                        Icons.backspace_outlined,
-                        color: Color(0xFF6B7280),
-                        size: 24,
+                      icon: const Icon(
+                        Icons.backspace_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 28,
                       ),
+                      splashColor: Colors.white.withOpacity(0.1),
+                      highlightColor: Colors.transparent,
                     ),
                   ),
                 ],

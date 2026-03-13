@@ -3,6 +3,7 @@ import 'add_entry_screen.dart';
 import 'dart:convert'; // for jsonEncode/jsonDecode
 import 'package:shared_preferences/shared_preferences.dart'; // for storage
 import '../services/encryption_service.dart';
+import 'edit_entries_screen.dart';
 
 // ── Data class — just holds data, like a struct in C ──
 class PasswordEntry {
@@ -161,53 +162,79 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D14),
-        title: const Text(
-          'KeySafe',
-          style: TextStyle(
-            color: Color(0xFFE2E8F0),
-            fontWeight: FontWeight.w700,
+      // ── UI: Modern Gradient Background ──
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0F172A), // Slate 900
+              Color(0xFF020617), // Slate 950
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom Top App Bar to blend with gradient
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.indigoAccent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.security_rounded,
+                        color: Colors.indigoAccent,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Text(
+                      'KeySafe',
+                      style: TextStyle(
+                        fontSize: 24,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Main Content Area
+              Expanded(
+                child: _entries.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(
+                          top: 8,
+                          bottom: 100,
+                        ), // Padding for FAB
+                        itemCount: _entries.length,
+                        itemBuilder: (context, index) {
+                          final entry = _entries[index];
+                          return _card(entry, index);
+                        },
+                      ),
+              ),
+            ],
           ),
         ),
       ),
-      body: _entries.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.lock_outline, size: 64, color: Color(0xFF2E2E45)),
-                  SizedBox(height: 16),
-                  Text(
-                    'No passwords yet',
-                    style: TextStyle(color: Color(0xFF6B7280)),
-                  ),
-                  Text(
-                    'Tap + to add one',
-                    style: TextStyle(color: Color(0xFF3D3D5C)),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              itemCount: _entries.length, // how many items in the list
-              itemBuilder: (context, index) {
-                // this runs once per item, like a for loop
-                // index = current position (0, 1, 2...)
-                final entry = _entries[index];
-                return _card(entry, index);
-              },
-            ),
+      // ── UI: Floating Action Button ──
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // navigate to AddEntryScreen and wait for result
           final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddEntryScreen()),
           );
 
-          // result is the Map we sent back with Navigator.pop
           if (result != null) {
             _addEntry(
               result['siteName'],
@@ -216,39 +243,91 @@ class _MainScreenState extends State<MainScreen> {
             );
           }
         },
-        backgroundColor: const Color(0xFF6366F1),
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: Colors.indigoAccent,
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }
 
+  // ── UI: Empty State ──
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.03),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.lock_outline_rounded,
+              size: 72,
+              color: Colors.white.withOpacity(0.2),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Your Vault is Empty',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Tap the + button below to safely\nstore your first password.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xFF94A3B8), height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── UI: Password Card ──
   Widget _card(PasswordEntry entry, int index) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF13131F),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E1E2E)),
+        color: Colors.white.withOpacity(0.04), // Glassmorphic background
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
+        ), // Subtle border
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
-
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
+            // Icon Container
             Container(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFF2E2E45),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.indigoAccent.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(14),
               ),
-
-              child: const Center(
-                child: Icon(Icons.language, color: Color(0xFF6366F1), size: 22),
+              child: Center(
+                child: Text(
+                  entry.siteName.isNotEmpty
+                      ? entry.siteName[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(
+                    color: Colors.indigoAccent,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(width: 12),
-            //Middle column with site name and username
+            const SizedBox(width: 16),
+
+            // Text Details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,63 +335,137 @@ class _MainScreenState extends State<MainScreen> {
                   Text(
                     entry.siteName,
                     style: const TextStyle(
-                      color: Color(0xFFE2E8F0),
+                      color: Colors.white,
                       fontWeight: FontWeight.w600,
-                      fontSize: 15,
+                      fontSize: 16,
+                      letterSpacing: 0.3,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     entry.username,
                     style: const TextStyle(
-                      color: Color(0xFF6B7280),
-                      fontSize: 12,
+                      color: Color(0xFF94A3B8),
+                      fontSize: 13,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 6),
                   Text(
                     _passwordVisible[index]
-                        ? EncryptionService.decryptPassword(
-                            entry.password,
-                          ) // ← decrypt when showing
-                        : '••••••••',
-                    style: const TextStyle(
-                      color: Color(0xFF4A4A6A),
-                      fontSize: 12,
-                      letterSpacing: 1,
+                        ? EncryptionService.decryptPassword(entry.password)
+                        : '••••••••••••',
+                    style: TextStyle(
+                      color: _passwordVisible[index]
+                          ? Colors.white70
+                          : const Color(0xFF64748B),
+                      fontSize: _passwordVisible[index] ? 14 : 18,
+                      letterSpacing: _passwordVisible[index] ? 0 : 2,
+                      fontWeight: _passwordVisible[index]
+                          ? FontWeight.normal
+                          : FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ),
 
-            IconButton(
-              icon: Icon(
-                _passwordVisible[index]
-                    ? Icons.visibility
-                    : Icons.visibility_off,
-                color: const Color(0xFF6B7280),
-                size: 20,
-              ),
-              onPressed: () {
-                setState(
-                  () => _passwordVisible[index] = !_passwordVisible[index],
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit, color: Color(0xFF6B7280), size: 20),
-              onPressed: () {
-                // TODO: open edit screen
-              },
-            ),
-            IconButton(
-              icon: const Icon(
-                Icons.delete,
-                color: Color(0xFF6B7280),
-                size: 20,
-              ),
-              onPressed: () => _confirmDelete(index),
+            // Action Buttons
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    _passwordVisible[index]
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                    color: _passwordVisible[index]
+                        ? Colors.indigoAccent
+                        : const Color(0xFF64748B),
+                    size: 22,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _passwordVisible[index] = !_passwordVisible[index];
+                    });
+                  },
+                ),
+                // Wrap the popup options in a subtle menu to save space
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert_rounded,
+                    color: Color(0xFF64748B),
+                    size: 22,
+                  ),
+                  color: const Color(0xFF1E293B),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      // 1. Decrypt the password to show in the edit screen
+                      final decryptedPassword =
+                          EncryptionService.decryptPassword(entry.password);
+
+                      // 2. Navigate and wait for the returned data
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditEntryScreen(
+                            initialSiteName: entry.siteName,
+                            initialUsername: entry.username,
+                            initialPassword: decryptedPassword,
+                          ),
+                        ),
+                      );
+
+                      // 3. Update the entry if the user saved changes
+                      if (result != null) {
+                        _editEntry(
+                          index,
+                          result['siteName'],
+                          result['username'],
+                          result['password'],
+                        );
+                      }
+                    } else if (value == 'delete') {
+                      _confirmDelete(index);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.edit_rounded,
+                            color: Colors.white70,
+                            size: 20,
+                          ),
+                          SizedBox(width: 12),
+                          Text('Edit', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.delete_rounded,
+                            color: Color(0xFFF87171),
+                            size: 20,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Delete',
+                            style: TextStyle(color: Color(0xFFF87171)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
