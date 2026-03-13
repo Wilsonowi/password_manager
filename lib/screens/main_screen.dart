@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'add_entry_screen.dart';
 import 'dart:convert'; // for jsonEncode/jsonDecode
 import 'package:shared_preferences/shared_preferences.dart'; // for storage
@@ -43,7 +44,7 @@ class _MainScreenState extends State<MainScreen> {
   // ── List lives here inside state, not global ──
   List<PasswordEntry> _entries = [];
   List<bool> _passwordVisible = [];
-
+  int? _expandedIndex; // which card is currently expanded (null if none)
   @override
   void initState() {
     super.initState();
@@ -159,45 +160,57 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  Color _getColorForSite(String siteName) {
+    if (siteName.isEmpty) return const Color(0xFF6366F1); // Default Indigo
+
+    final int hash = siteName.toLowerCase().codeUnitAt(0);
+    final List<Color> colors = [
+      const Color(0xFFEF4444), // Red
+      const Color(0xFFF97316), // Orange
+      const Color(0xFF10B981), // Emerald
+      const Color(0xFF3B82F6), // Blue
+      const Color(0xFF8B5CF6), // Violet
+      const Color(0xFFEC4899), // Pink
+    ];
+    return colors[hash % colors.length];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ── UI: Modern Gradient Background ──
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0F172A), // Slate 900
-              Color(0xFF020617), // Slate 950
-            ],
+            colors: [Color(0xFF0F172A), Color(0xFF020617)],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Custom Top App Bar to blend with gradient
+              // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.indigoAccent.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(
-                        Icons.security_rounded,
-                        color: Colors.indigoAccent,
+                        Icons.shield_rounded,
+                        color: Colors.white,
+                        size: 28,
                       ),
                     ),
                     const SizedBox(width: 16),
                     const Text(
-                      'KeySafe',
+                      'My Vault',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 28,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -0.5,
@@ -207,19 +220,15 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
 
-              // Main Content Area
+              // List Content
               Expanded(
                 child: _entries.isEmpty
                     ? _buildEmptyState()
                     : ListView.builder(
-                        padding: const EdgeInsets.only(
-                          top: 8,
-                          bottom: 100,
-                        ), // Padding for FAB
+                        padding: const EdgeInsets.only(top: 8, bottom: 100),
                         itemCount: _entries.length,
                         itemBuilder: (context, index) {
-                          final entry = _entries[index];
-                          return _card(entry, index);
+                          return _buildSmartCard(_entries[index], index);
                         },
                       ),
               ),
@@ -227,7 +236,6 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       ),
-      // ── UI: Floating Action Button ──
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final result = await Navigator.push(
@@ -243,31 +251,27 @@ class _MainScreenState extends State<MainScreen> {
             );
           }
         },
-        backgroundColor: Colors.indigoAccent,
+        backgroundColor: Colors.white,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
+        child: const Icon(
+          Icons.add_rounded,
+          color: Color(0xFF0F172A),
+          size: 32,
+        ),
       ),
     );
   }
 
-  // ── UI: Empty State ──
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.lock_outline_rounded,
-              size: 72,
-              color: Colors.white.withOpacity(0.2),
-            ),
+          Icon(
+            Icons.lock_outline_rounded,
+            size: 72,
+            color: Colors.white.withOpacity(0.1),
           ),
           const SizedBox(height: 24),
           const Text(
@@ -280,192 +284,242 @@ class _MainScreenState extends State<MainScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Tap the + button below to safely\nstore your first password.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF94A3B8), height: 1.5),
+            'Tap the + button below to add your first entry.',
+            style: TextStyle(color: Color(0xFF94A3B8)),
           ),
         ],
       ),
     );
   }
 
-  // ── UI: Password Card ──
-  Widget _card(PasswordEntry entry, int index) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04), // Glassmorphic background
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-        ), // Subtle border
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Icon Container
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.indigoAccent.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: Text(
-                  entry.siteName.isNotEmpty
-                      ? entry.siteName[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(
-                    color: Colors.indigoAccent,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
+  // ── UI: Expandable Smart Card ──
+  Widget _buildSmartCard(PasswordEntry entry, int index) {
+    final bool isExpanded = _expandedIndex == index;
+    final Color accentColor = _getColorForSite(entry.siteName);
 
-            // Text Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          // Toggle expansion
+          _expandedIndex = isExpanded ? null : index;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        margin: EdgeInsets.symmetric(
+          horizontal: isExpanded
+              ? 16
+              : 20, // Expands slightly wider when tapped
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: isExpanded
+              ? accentColor.withOpacity(0.1)
+              : Colors.white.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isExpanded
+                ? accentColor.withOpacity(0.5)
+                : Colors.white.withOpacity(0.05),
+            width: isExpanded ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            // Top Section (Always Visible)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
                 children: [
-                  Text(
-                    entry.siteName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      letterSpacing: 0.3,
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [accentColor, accentColor.withOpacity(0.7)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Text(
+                        entry.siteName.isNotEmpty
+                            ? entry.siteName[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    entry.username,
-                    style: const TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 13,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          entry.siteName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          entry.username,
+                          style: TextStyle(
+                            color: isExpanded
+                                ? Colors.white70
+                                : const Color(0xFF94A3B8),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _passwordVisible[index]
-                        ? EncryptionService.decryptPassword(entry.password)
-                        : '••••••••••••',
-                    style: TextStyle(
-                      color: _passwordVisible[index]
-                          ? Colors.white70
-                          : const Color(0xFF64748B),
-                      fontSize: _passwordVisible[index] ? 14 : 18,
-                      letterSpacing: _passwordVisible[index] ? 0 : 2,
-                      fontWeight: _passwordVisible[index]
-                          ? FontWeight.normal
-                          : FontWeight.bold,
-                    ),
+                  Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: isExpanded ? accentColor : const Color(0xFF64748B),
                   ),
                 ],
               ),
             ),
 
-            // Action Buttons
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    _passwordVisible[index]
-                        ? Icons.visibility_rounded
-                        : Icons.visibility_off_rounded,
-                    color: _passwordVisible[index]
-                        ? Colors.indigoAccent
-                        : const Color(0xFF64748B),
-                    size: 22,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _passwordVisible[index] = !_passwordVisible[index];
-                    });
-                  },
-                ),
-                // Wrap the popup options in a subtle menu to save space
-                PopupMenuButton<String>(
-                  icon: const Icon(
-                    Icons.more_vert_rounded,
-                    color: Color(0xFF64748B),
-                    size: 22,
-                  ),
-                  color: const Color(0xFF1E293B),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  onSelected: (value) async {
-                    if (value == 'edit') {
-                      // 1. Decrypt the password to show in the edit screen
-                      final decryptedPassword =
-                          EncryptionService.decryptPassword(entry.password);
-
-                      // 2. Navigate and wait for the returned data
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditEntryScreen(
-                            initialSiteName: entry.siteName,
-                            initialUsername: entry.username,
-                            initialPassword: decryptedPassword,
-                          ),
-                        ),
-                      );
-
-                      // 3. Update the entry if the user saved changes
-                      if (result != null) {
-                        _editEntry(
-                          index,
-                          result['siteName'],
-                          result['username'],
-                          result['password'],
-                        );
-                      }
-                    } else if (value == 'delete') {
-                      _confirmDelete(index);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
+            // Bottom Section (Only Visible When Expanded)
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              child: isExpanded
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
                         children: [
-                          Icon(
-                            Icons.edit_rounded,
-                            color: Colors.white70,
-                            size: 20,
+                          Divider(
+                            color: accentColor.withOpacity(0.2),
+                            height: 1,
                           ),
-                          SizedBox(width: 12),
-                          Text('Edit', style: TextStyle(color: Colors.white)),
+                          const SizedBox(height: 16),
+
+                          // Password Reveal Area
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: SelectableText(
+                                    // Allows user to highlight and copy manually too
+                                    EncryptionService.decryptPassword(
+                                      entry.password,
+                                    ),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.copy_rounded,
+                                    color: Colors.white70,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    final decrypted =
+                                        EncryptionService.decryptPassword(
+                                          entry.password,
+                                        );
+                                    Clipboard.setData(
+                                      ClipboardData(text: decrypted),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Copied ${entry.siteName} password',
+                                        ),
+                                        backgroundColor: accentColor,
+                                        behavior: SnackBarBehavior.floating,
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Action Buttons
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton.icon(
+                                onPressed: () async {
+                                  final decryptedPassword =
+                                      EncryptionService.decryptPassword(
+                                        entry.password,
+                                      );
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditEntryScreen(
+                                        initialSiteName: entry.siteName,
+                                        initialUsername: entry.username,
+                                        initialPassword: decryptedPassword,
+                                      ),
+                                    ),
+                                  );
+
+                                  if (result != null) {
+                                    _editEntry(
+                                      index,
+                                      result['siteName'],
+                                      result['username'],
+                                      result['password'],
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.edit_rounded, size: 18),
+                                label: const Text('Edit'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white70,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton.icon(
+                                onPressed: () => _confirmDelete(index),
+                                icon: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 18,
+                                ),
+                                label: const Text('Delete'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xFFF87171),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.delete_rounded,
-                            color: Color(0xFFF87171),
-                            size: 20,
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            'Delete',
-                            style: TextStyle(color: Color(0xFFF87171)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    )
+                  : const SizedBox.shrink(), // Takes up 0 space when closed
             ),
           ],
         ),
