@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'main_screen.dart';
 
-//Stateful widget for lock screen(Screen can change and update itself based on user interaction)
 class LockScreen extends StatefulWidget {
   const LockScreen({super.key});
 
@@ -11,7 +10,7 @@ class LockScreen extends StatefulWidget {
 }
 
 class _LockScreenState extends State<LockScreen> {
-  // ── Variables ──
+  // ── Logic: Variables ──
   String _enteredPin = '';
   List<bool> _revealed = [false, false, false, false];
   final _hardcodedPin = '1234';
@@ -19,9 +18,9 @@ class _LockScreenState extends State<LockScreen> {
   int _failedAttempts = 0;
   bool _isLockedOut = false;
   int _lockoutRemaining = 0;
-  Timer? _lockoutTimer; // ? means this variable can be null
+  Timer? _lockoutTimer;
 
-  // ── Called when a digit key is tapped ──
+  // ── Logic: Key Tap ──
   void _onKeyTap(String digit) {
     if (_enteredPin.length >= 4) return;
 
@@ -29,10 +28,9 @@ class _LockScreenState extends State<LockScreen> {
 
     setState(() {
       _enteredPin += digit;
-      _revealed[index] = true; // show number briefly
+      _revealed[index] = true;
     });
 
-    // after 600ms, hide it behind a dot
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
         setState(() {
@@ -40,11 +38,13 @@ class _LockScreenState extends State<LockScreen> {
         });
       }
     });
+
     if (_enteredPin.length == 4) {
       Future.delayed(const Duration(milliseconds: 300), _verifyPin);
     }
   }
 
+  // ── Logic: Verification ──
   void _verifyPin() {
     if (_enteredPin == _hardcodedPin) {
       Navigator.pushReplacement(
@@ -55,10 +55,9 @@ class _LockScreenState extends State<LockScreen> {
       _failedAttempts++;
 
       if (_failedAttempts >= 3) {
-        _startLockout(); // outside setState ✅
+        _startLockout();
       } else {
         setState(() {
-          // only setState for message update
           _message =
               'Incorrect PIN. Remaining attempts: ${3 - _failedAttempts}';
           _enteredPin = '';
@@ -68,21 +67,21 @@ class _LockScreenState extends State<LockScreen> {
     }
   }
 
+  // ── Logic: Lockout ──
   void _startLockout() {
     setState(() {
       _isLockedOut = true;
-      _lockoutRemaining = 300; // 300 seconds = 5 minutes
+      _lockoutRemaining = 300;
       _enteredPin = '';
       _revealed = [false, false, false, false];
-      _message = 'Locked out due to multiple failed attempts. Try again later';
+      _message = 'Locked out due to multiple failed attempts.';
     });
 
-    // tick every second
     _lockoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() => _lockoutRemaining--);
 
       if (_lockoutRemaining <= 0) {
-        timer.cancel(); // stop the timer
+        timer.cancel();
         _endLockout();
       }
     });
@@ -97,7 +96,7 @@ class _LockScreenState extends State<LockScreen> {
     });
   }
 
-  // ── Called when backspace is tapped ──
+  // ── Logic: Delete ──
   void _onDelete() {
     if (_enteredPin.isEmpty) return;
     setState(() {
@@ -109,7 +108,7 @@ class _LockScreenState extends State<LockScreen> {
 
   @override
   void dispose() {
-    _lockoutTimer?.cancel(); // cancel timer if screen is closed
+    _lockoutTimer?.cancel();
     super.dispose();
   }
 
@@ -119,14 +118,16 @@ class _LockScreenState extends State<LockScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: digits.map((digit) {
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+          ), // Slightly tighter spacing for squares
           child: _buildKey(digit),
         );
       }).toList(),
     );
   }
 
-  // ── UI: Individual Key ──
+  // ── UI: Individual Square Key ──
   Widget _buildKey(String digit) {
     return SizedBox(
       width: 76,
@@ -134,17 +135,53 @@ class _LockScreenState extends State<LockScreen> {
       child: TextButton(
         onPressed: () => _onKeyTap(digit),
         style: TextButton.styleFrom(
-          backgroundColor: Colors.white.withOpacity(0.06), // Translucent look
-          shape: const CircleBorder(), // Circular modern keys
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.white.withOpacity(
+            0.06,
+          ), // Translucent dark glass
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(
+              16,
+            ), // Gives it a smooth square look
+            side: BorderSide(
+              color: Colors.white.withOpacity(0.05),
+              width: 1,
+            ), // Subtle border
+          ),
+          foregroundColor: const Color(0xFF2563EB), // Dark blue splash ripple
         ),
         child: Text(
           digit,
           style: const TextStyle(
             fontSize: 28,
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.w500,
             color: Colors.white,
           ),
+        ),
+      ),
+    );
+  }
+
+  // ── UI: Square Backspace Key ──
+  Widget _buildBackspaceKey() {
+    return SizedBox(
+      width: 76,
+      height: 76,
+      child: TextButton(
+        onPressed: _onDelete,
+        style: TextButton.styleFrom(
+          backgroundColor: Colors.white.withOpacity(
+            0.02,
+          ), // Slightly dimmer than number keys
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.white.withOpacity(0.02), width: 1),
+          ),
+          foregroundColor: const Color(0xFF2563EB),
+        ),
+        child: const Icon(
+          Icons.backspace_rounded,
+          color: Color(0xFF94A3B8),
+          size: 28,
         ),
       ),
     );
@@ -153,15 +190,14 @@ class _LockScreenState extends State<LockScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ── UI: Modern Gradient Background ──
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF0F172A), // Slate 900
-              Color(0xFF020617), // Slate 950
+              Color(0xFF0F172A), // Deep Slate/Blue-Black
+              Color(0xFF000000), // Pure Black
             ],
           ),
         ),
@@ -172,7 +208,7 @@ class _LockScreenState extends State<LockScreen> {
     );
   }
 
-  // ── UI: Lockout Screen ──
+  // ── UI: Lockout View ──
   Widget _buildLockoutView() {
     int minutes = _lockoutRemaining ~/ 60;
     int seconds = _lockoutRemaining % 60;
@@ -184,7 +220,6 @@ class _LockScreenState extends State<LockScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Glowing Lock Icon
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -225,7 +260,6 @@ class _LockScreenState extends State<LockScreen> {
               ),
             ),
             const SizedBox(height: 48),
-            // Sleek Timer
             Text(
               timer,
               style: const TextStyle(
@@ -247,22 +281,22 @@ class _LockScreenState extends State<LockScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Logo Area
           Container(
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: const Color(0xFF2563EB).withOpacity(0.15),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFF2563EB).withOpacity(0.3),
+              ),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              // Make sure to un-comment and use your asset when ready!
-              // child: Image.asset('assets/logo.png', fit: BoxFit.cover),
               child: const Icon(
                 Icons.security_rounded,
                 size: 36,
-                color: Colors.indigoAccent,
+                color: Color(0xFF3B82F6),
               ),
             ),
           ),
@@ -303,15 +337,19 @@ class _LockScreenState extends State<LockScreen> {
                 height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: filled ? Colors.white : Colors.transparent,
+                  color: filled
+                      ? const Color(0xFF2563EB)
+                      : Colors.transparent, // Dark Blue Filled
                   border: Border.all(
-                    color: filled ? Colors.white : const Color(0xFF475569),
+                    color: filled
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFF475569),
                     width: 2,
                   ),
                   boxShadow: filled
                       ? [
                           BoxShadow(
-                            color: Colors.white.withOpacity(0.4),
+                            color: const Color(0xFF2563EB).withOpacity(0.4),
                             blurRadius: 10,
                             spreadRadius: 1,
                           ),
@@ -323,7 +361,7 @@ class _LockScreenState extends State<LockScreen> {
                       ? Text(
                           _enteredPin[i],
                           style: const TextStyle(
-                            color: Color(0xFF0F172A), // Dark text on white dot
+                            color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -339,11 +377,13 @@ class _LockScreenState extends State<LockScreen> {
           Column(
             children: [
               _buildKeyRow(['1', '2', '3']),
-              const SizedBox(height: 16),
+              const SizedBox(
+                height: 12,
+              ), // Reduced gap slightly to fit the square layout better
               _buildKeyRow(['4', '5', '6']),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _buildKeyRow(['7', '8', '9']),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -351,23 +391,10 @@ class _LockScreenState extends State<LockScreen> {
                     width: 76,
                     height: 76,
                   ), // Empty space for alignment
-                  const SizedBox(width: 24),
+                  const SizedBox(width: 20),
                   _buildKey('0'),
-                  const SizedBox(width: 24),
-                  SizedBox(
-                    width: 76,
-                    height: 76,
-                    child: IconButton(
-                      onPressed: _onDelete,
-                      icon: const Icon(
-                        Icons.backspace_rounded,
-                        color: Color(0xFF94A3B8),
-                        size: 28,
-                      ),
-                      splashColor: Colors.white.withOpacity(0.1),
-                      highlightColor: Colors.transparent,
-                    ),
-                  ),
+                  const SizedBox(width: 20),
+                  _buildBackspaceKey(), // New matching square backspace key!
                 ],
               ),
             ],

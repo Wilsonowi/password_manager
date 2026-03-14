@@ -10,6 +10,7 @@ class AddEntryScreen extends StatefulWidget {
 
 class _AddEntryScreenState extends State<AddEntryScreen> {
   // ── Logic: Controllers ──
+  final _emailController = TextEditingController();
   final _siteController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -20,6 +21,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     _siteController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -28,8 +30,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     final site = _siteController.text.trim();
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
+    final email = _emailController.text.trim();
 
-    if (site.isEmpty || username.isEmpty || password.isEmpty) {
+    if (site.isEmpty || username.isEmpty || password.isEmpty || email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Row(
@@ -56,6 +59,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     Navigator.pop(context, {
       'siteName': site,
       'username': username,
+      'email': email,
       'password': password,
     });
   }
@@ -115,7 +119,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      // ── UI: Modern Gradient Background ──
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -153,7 +156,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                 const Padding(
                   padding: EdgeInsets.only(left: 12, bottom: 8),
                   child: Text(
-                    'NEW ACCOUNT DETAILS',
+                    'NEW PASSWORD ENTRY',
                     style: TextStyle(
                       color: Color(0xFF64748B),
                       fontSize: 12,
@@ -163,7 +166,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                   ),
                 ),
 
-                // ── iOS Style Grouped List ──
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.04),
@@ -174,8 +176,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     children: [
                       _buildIOSField(
                         controller: _siteController,
-                        label: 'Site',
-                        hint: 'e.g. Google, Netflix',
+                        label: 'Website/App',
+                        hint: 'example.com',
                       ),
                       Divider(
                         height: 1,
@@ -185,7 +187,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                       _buildIOSField(
                         controller: _usernameController,
                         label: 'Username',
-                        hint: 'Email or Username',
+                        hint: 'User',
+                      ),
+                      Divider(
+                        height: 1,
+                        color: Colors.white.withOpacity(0.08),
+                        indent: 16,
+                      ),
+                      _buildIOSField(
+                        controller: _emailController,
+                        label: 'Email',
+                        hint: 'example@example.com',
                       ),
                       Divider(
                         height: 1,
