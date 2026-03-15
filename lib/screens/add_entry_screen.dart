@@ -9,11 +9,11 @@ class AddEntryScreen extends StatefulWidget {
 }
 
 class _AddEntryScreenState extends State<AddEntryScreen> {
-  // ── Logic: Controllers ──
   final _emailController = TextEditingController();
   final _siteController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _urlController = TextEditingController();
   bool _passwordVisible = false;
 
   @override
@@ -22,15 +22,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     _usernameController.dispose();
     _passwordController.dispose();
     _emailController.dispose();
+    _urlController.dispose();
     super.dispose();
   }
 
-  // ── Logic: Save & Validate ──
   void _onSave() {
     final site = _siteController.text.trim();
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
     final email = _emailController.text.trim();
+    final url = _urlController.text.trim();
 
     if (site.isEmpty || username.isEmpty || password.isEmpty || email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -45,7 +46,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
               ),
             ],
           ),
-          backgroundColor: const Color(0xFFEF4444), // Red error color
+          backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -68,18 +69,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     const chars =
         'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890!@#\$%^&*()';
     final rnd = Random();
-
-    // Generate a 12-character random string
     String generated = String.fromCharCodes(
       Iterable.generate(12, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))),
     );
-
     setState(() {
       _passwordController.text = generated;
-      _passwordVisible =
-          true; // Briefly show it so they know what was generated
+      _passwordVisible = true;
     });
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Row(
@@ -92,7 +88,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF10B981), // Emerald Success Color
+        backgroundColor: const Color(0xFF10B981),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(20),
@@ -119,6 +115,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+
+      // ── Same gradient as main screen ──
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -126,7 +124,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF0F172A), Color(0xFF020617)],
+            colors: [
+              Color(0xFF0F172A), // Deep Slate
+              Color(0xFF000000), // Pure Black
+            ],
           ),
         ),
         child: SafeArea(
@@ -135,37 +136,42 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Icon Header
+                // ── Icon Header ──
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.all(20),
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
-                      color: Colors.indigoAccent.withOpacity(0.1),
-                      shape: BoxShape.circle,
+                      color: const Color(0xFF2563EB).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFF2563EB).withOpacity(0.3),
+                      ),
                     ),
                     child: const Icon(
-                      Icons.shield_rounded,
-                      size: 48,
-                      color: Colors.indigoAccent,
+                      Icons.vpn_key_rounded,
+                      size: 36,
+                      color: Color(0xFF3B82F6),
                     ),
                   ),
                 ),
                 const SizedBox(height: 32),
 
-                // Group Label
+                // ── Section Label ──
                 const Padding(
-                  padding: EdgeInsets.only(left: 12, bottom: 8),
+                  padding: EdgeInsets.only(left: 4, bottom: 10),
                   child: Text(
                     'NEW PASSWORD ENTRY',
                     style: TextStyle(
                       color: Color(0xFF64748B),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
+                      letterSpacing: 1.5,
                     ),
                   ),
                 ),
 
+                // ── Input Fields Container ──
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.04),
@@ -174,78 +180,83 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                   ),
                   child: Column(
                     children: [
-                      _buildIOSField(
+                      _buildField(
                         controller: _siteController,
-                        label: 'Website/App',
-                        hint: 'example.com',
+                        label: 'App/Website Name',
+                        hint: 'Example: Google, Netflix',
+                        icon: Icons.language_rounded,
                       ),
-                      Divider(
-                        height: 1,
-                        color: Colors.white.withOpacity(0.08),
-                        indent: 16,
+                      _buildDivider(),
+                      _buildField(
+                        controller: _urlController,
+                        label: 'URL',
+                        hint: 'https://google.com',
+                        icon: Icons.link_rounded,
+                        keyboardType: TextInputType.url,
                       ),
-                      _buildIOSField(
+                      _buildDivider(),
+                      _buildField(
                         controller: _usernameController,
                         label: 'Username',
-                        hint: 'User',
+                        hint: 'Your username or ID',
+                        icon: Icons.person_rounded,
                       ),
-                      Divider(
-                        height: 1,
-                        color: Colors.white.withOpacity(0.08),
-                        indent: 16,
-                      ),
-                      _buildIOSField(
+                      _buildDivider(),
+                      _buildField(
                         controller: _emailController,
                         label: 'Email',
-                        hint: 'example@example.com',
+                        hint: 'Example@email.com',
+                        icon: Icons.email_rounded,
+                        keyboardType: TextInputType.emailAddress,
                       ),
-                      Divider(
-                        height: 1,
-                        color: Colors.white.withOpacity(0.08),
-                        indent: 16,
-                      ),
-                      _buildIOSField(
+                      _buildDivider(),
+                      _buildField(
                         controller: _passwordController,
                         label: 'Password',
                         hint: 'Enter or generate',
+                        icon: Icons.lock_rounded,
                         isPassword: true,
                       ),
                     ],
                   ),
                 ),
 
-                // Password Generator Button
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
+                // ── Generate Password Button ──
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
                   child: TextButton.icon(
                     onPressed: _generateSecurePassword,
                     icon: const Icon(
                       Icons.auto_awesome_rounded,
                       size: 18,
-                      color: Colors.indigoAccent,
+                      color: Color(0xFF3B82F6),
                     ),
                     label: const Text(
                       'Generate Secure Password',
                       style: TextStyle(
-                        color: Colors.indigoAccent,
+                        color: Color(0xFF3B82F6),
                         fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
                     ),
                     style: TextButton.styleFrom(
-                      backgroundColor: Colors.indigoAccent.withOpacity(0.1),
+                      backgroundColor: const Color(0xFF2563EB).withOpacity(0.1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: const Color(0xFF2563EB).withOpacity(0.2),
+                        ),
                       ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 10,
+                        vertical: 12,
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
 
                 // ── Save Button ──
                 SizedBox(
@@ -254,10 +265,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                   child: ElevatedButton(
                     onPressed: _onSave,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigoAccent,
+                      backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
-                      elevation: 8,
-                      shadowColor: Colors.indigoAccent.withOpacity(0.5),
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -272,6 +282,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     ),
                   ),
                 ),
+
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -280,39 +292,59 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     );
   }
 
-  // ── UI: iOS Style Inline Field ──
-  Widget _buildIOSField({
+  // ── Divider between fields ──
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      color: Colors.white.withOpacity(0.08),
+      indent: 16,
+    );
+  }
+
+  // ── Input field with leading icon ──
+  Widget _buildField({
     required TextEditingController controller,
     required String label,
     required String hint,
+    required IconData icon,
     bool isPassword = false,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
+          // Leading icon
+          Icon(icon, size: 18, color: const Color(0xFF2563EB)),
+          const SizedBox(width: 12),
+
+          // Label
           SizedBox(
-            width: 90,
+            width: 80,
             child: Text(
               label,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
+
+          // Text input
           Expanded(
             child: TextField(
               controller: controller,
               obscureText: isPassword && !_passwordVisible,
-              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+              keyboardType: keyboardType,
+              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 15),
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: TextStyle(
-                  color: const Color(0xFF64748B).withOpacity(0.5),
+                  color: const Color(0xFF475569).withOpacity(0.6),
+                  fontSize: 14,
                 ),
-                border: InputBorder.none, // Removes the underline
+                border: InputBorder.none,
                 suffixIcon: isPassword
                     ? IconButton(
                         icon: Icon(

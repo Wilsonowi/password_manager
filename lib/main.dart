@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:password_manager/screens/main_screen.dart';
 import 'screens/lock_screen.dart';
 import '../services/encryption_service.dart';
 
@@ -16,7 +17,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'KeySafe',
       debugShowCheckedModeBanner: false,
-      home: const LockScreen(),
+      home: const MainScreen(),
     );
   }
 }

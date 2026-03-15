@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'main_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LockScreen extends StatefulWidget {
   const LockScreen({super.key});
@@ -45,8 +46,11 @@ class _LockScreenState extends State<LockScreen> {
   }
 
   // ── Logic: Verification ──
-  void _verifyPin() {
-    if (_enteredPin == _hardcodedPin) {
+  Future<void> _verifyPin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPin = prefs.getString('master_pin') ?? '1234';
+
+    if (_enteredPin == savedPin) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const MainScreen()),

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/encryption_service.dart';
 import 'edit_entries_screen.dart';
+import 'view_entry_screen.dart';
 
 // ── Data class ──
 class PasswordEntry {
@@ -12,12 +13,14 @@ class PasswordEntry {
   String siteName;
   String username;
   String password;
+  String url;
 
   PasswordEntry({
     required this.email,
     required this.siteName,
     required this.username,
     required this.password,
+    required this.url,
   });
 
   Map<String, dynamic> toJson() {
@@ -26,19 +29,24 @@ class PasswordEntry {
       'username': username,
       'password': password,
       'email': email,
+      'url': url,
     };
   }
 
   factory PasswordEntry.fromJson(Map<String, dynamic> json) {
     return PasswordEntry(
-      email: json['email'],
+      email: json['email'] ?? '',
       siteName: json['siteName'],
       username: json['username'],
       password: json['password'],
+      url: json['url'] ?? '',
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN SCREEN — bottom nav shell
+// ─────────────────────────────────────────────────────────────────────────────
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -47,9 +55,102 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  int _selectedTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _selectedTab == 0 ? const PasswordsTab() : const SettingsTab(),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A),
+          border: Border(
+            top: BorderSide(color: Colors.white.withOpacity(0.08), width: 1),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  icon: Icons.vpn_key_rounded,
+                  label: 'Passwords',
+                  index: 0,
+                ),
+                _buildNavItem(
+                  icon: Icons.settings_rounded,
+                  label: 'Settings',
+                  index: 1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required int index,
+  }) {
+    final bool isActive = _selectedTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive
+              ? const Color(0xFF2563EB).withOpacity(0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 22,
+              color: isActive
+                  ? const Color(0xFF3B82F6)
+                  : const Color(0xFF64748B),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: isActive
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PASSWORDS TAB
+// ─────────────────────────────────────────────────────────────────────────────
+class PasswordsTab extends StatefulWidget {
+  const PasswordsTab({super.key});
+
+  @override
+  State<PasswordsTab> createState() => _PasswordsTabState();
+}
+
+class _PasswordsTabState extends State<PasswordsTab> {
   List<PasswordEntry> _entries = [];
   List<bool> _passwordVisible = [];
-  int? _expandedIndex;
 
   @override
   void initState() {
@@ -62,6 +163,7 @@ class _MainScreenState extends State<MainScreen> {
     String username,
     String password,
     String email,
+    String url,
   ) {
     setState(() {
       _entries.add(
@@ -70,10 +172,10 @@ class _MainScreenState extends State<MainScreen> {
           username: username,
           email: email,
           password: EncryptionService.encryptPassword(password),
+          url: url,
         ),
       );
       _passwordVisible.add(false);
-      _expandedIndex = null;
     });
     _saveEntries();
   }
@@ -84,12 +186,14 @@ class _MainScreenState extends State<MainScreen> {
     String username,
     String password,
     String email,
+    String url,
   ) {
     setState(() {
       _entries[index].siteName = siteName;
       _entries[index].username = username;
       _entries[index].email = email;
       _entries[index].password = EncryptionService.encryptPassword(password);
+      _entries[index].url = url;
     });
     _saveEntries();
   }
@@ -98,11 +202,6 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _entries.removeAt(index);
       _passwordVisible.removeAt(index);
-      if (_expandedIndex == index) {
-        _expandedIndex = null;
-      } else if (_expandedIndex != null && _expandedIndex! > index) {
-        _expandedIndex = _expandedIndex! - 1;
-      }
     });
     _saveEntries();
   }
@@ -111,7 +210,7 @@ class _MainScreenState extends State<MainScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B), // Slate 800
+        backgroundColor: const Color(0xFF1E293B),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Delete Entry',
@@ -155,16 +254,16 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _saveEntries() async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonList = _entries.map((e) => e.toJson()).toList();
-    final jsonString = jsonEncode(jsonList);
-    await prefs.setString('entries', jsonString);
+    await prefs.setString(
+      'entries',
+      jsonEncode(_entries.map((e) => e.toJson()).toList()),
+    );
   }
 
   Future<void> _loadEntries() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString('entries');
     if (jsonString == null) return;
-
     final jsonList = jsonDecode(jsonString) as List;
     setState(() {
       _entries = jsonList
@@ -175,115 +274,142 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Color _getColorForSite(String siteName) {
-    if (siteName.isEmpty) return const Color(0xFF2563EB); // Default Dark Blue
-
+    if (siteName.isEmpty) return const Color(0xFF2563EB);
     final int hash = siteName.toLowerCase().codeUnitAt(0);
     final List<Color> colors = [
-      const Color(0xFFEF4444), // Red
-      const Color(0xFFF97316), // Orange
-      const Color(0xFF10B981), // Emerald
-      const Color(0xFF3B82F6), // Blue
-      const Color(0xFF8B5CF6), // Violet
-      const Color(0xFFEC4899), // Pink
+      const Color(0xFFEF4444),
+      const Color(0xFFF97316),
+      const Color(0xFF10B981),
+      const Color(0xFF3B82F6),
+      const Color(0xFF8B5CF6),
+      const Color(0xFFEC4899),
     ];
     return colors[hash % colors.length];
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0F172A), // Deep Slate/Blue-Black
-              Color(0xFF000000), // Pure Black
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB), // Dark Blue
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.vpn_key_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'Passwords',
-                      style: TextStyle(
-                        fontSize: 28,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _entries.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: const EdgeInsets.only(top: 8, bottom: 100),
-                        itemCount: _entries.length,
-                        itemBuilder: (context, index) {
-                          return _buildSmartCard(_entries[index], index);
-                        },
-                      ),
-              ),
-            ],
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0F172A), Color(0xFF000000)],
         ),
       ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF2563EB).withOpacity(0.4), // Dark Blue Glow
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // ── Header ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.vpn_key_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    'Passwords',
+                    style: TextStyle(
+                      fontSize: 28,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const Spacer(),
+                  // Entry count badge
+                  if (_entries.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_entries.length} saved',
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // ── Entry list ──
+            Expanded(
+              child: _entries.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(top: 8, bottom: 16),
+                      itemCount: _entries.length,
+                      itemBuilder: (context, index) =>
+                          _buildCard(_entries[index], index),
+                    ),
+            ),
+
+            // ── Add button ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddEntryScreen(),
+                      ),
+                    );
+                    if (result != null) {
+                      _addEntry(
+                        result['siteName'],
+                        result['username'],
+                        result['password'],
+                        result['email'] ?? '',
+                        result['url'] ?? '',
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon: const Icon(Icons.add_rounded, size: 22),
+                  label: const Text(
+                    'Add New Password',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
-        ),
-        child: FloatingActionButton(
-          onPressed: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddEntryScreen()),
-            );
-
-            if (result != null) {
-              _addEntry(
-                result['siteName'],
-                result['username'],
-                result['password'],
-                result['email'],
-              );
-            }
-          },
-          backgroundColor: const Color(0xFF2563EB), // Dark Blue FAB
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
         ),
       ),
     );
@@ -300,240 +426,484 @@ class _MainScreenState extends State<MainScreen> {
             color: Colors.white.withOpacity(0.1),
           ),
           const SizedBox(height: 24),
+          const Text(
+            'No Passwords Saved',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Tap the button below to add your passwords.',
+            style: TextStyle(color: Color(0xFF94A3B8)),
+          ),
         ],
       ),
     );
   }
 
-  // ── UI: Expandable Smart Card ──
-  Widget _buildSmartCard(PasswordEntry entry, int index) {
-    final bool isExpanded = _expandedIndex == index;
+  // ── Simple card — tap opens ViewEntryScreen ──
+  Widget _buildCard(PasswordEntry entry, int index) {
     final Color accentColor = _getColorForSite(entry.siteName);
 
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _expandedIndex = isExpanded ? null : index;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        margin: EdgeInsets.symmetric(
-          horizontal: isExpanded ? 16 : 20,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04), // Glassmorphic card
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isExpanded
-                ? accentColor.withOpacity(0.5)
-                : Colors.white.withOpacity(0.08),
-            width: isExpanded ? 1.5 : 1,
+      onTap: () async {
+        // Navigate to detail page, wait for action result
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ViewEntryScreen(
+              siteName: entry.siteName,
+              username: entry.username,
+              email: entry.email,
+              encryptedPassword: entry.password,
+              url: entry.url,
+              accentColor: accentColor,
+              index: index,
+            ),
           ),
+        );
+
+        if (result != null) {
+          if (result['action'] == 'delete') {
+            _confirmDelete(index);
+          } else if (result['action'] == 'edit') {
+            final data = result['data'];
+            _editEntry(
+              index,
+              data['siteName'],
+              data['username'],
+              data['password'],
+              data['email'] ?? entry.email,
+              data['url'] ?? '',
+            );
+          }
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
-        child: Column(
+        child: Row(
           children: [
-            // Top Section (Always Visible)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
+            // Site initial icon
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [accentColor, accentColor.withOpacity(0.7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(
+                child: Text(
+                  entry.siteName.isNotEmpty
+                      ? entry.siteName[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // Site name + username
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [accentColor, accentColor.withOpacity(0.7)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Text(
-                        entry.siteName.isNotEmpty
-                            ? entry.siteName[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                  Text(
+                    entry.siteName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      letterSpacing: 0.2,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          entry.siteName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          entry.username,
-                          style: TextStyle(
-                            color: isExpanded
-                                ? Colors.white70
-                                : const Color(0xFF94A3B8),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 4),
+                  Text(
+                    entry.username,
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 13,
                     ),
-                  ),
-                  Icon(
-                    isExpanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
-                    color: isExpanded ? accentColor : const Color(0xFF64748B),
                   ),
                 ],
               ),
             ),
 
-            // Bottom Section (Only Visible When Expanded)
-            AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              child: isExpanded
-                  ? Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Column(
-                        children: [
-                          Divider(
-                            color: accentColor.withOpacity(0.2),
-                            height: 1,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Password Reveal Area
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(
-                                0.3,
-                              ), // Darker reveal box
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: SelectableText(
-                                    EncryptionService.decryptPassword(
-                                      entry.password,
-                                    ),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w500,
-                                      letterSpacing: 1.5,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.copy_rounded,
-                                    color: Colors.white70,
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
-                                    final decrypted =
-                                        EncryptionService.decryptPassword(
-                                          entry.password,
-                                        );
-                                    Clipboard.setData(
-                                      ClipboardData(text: decrypted),
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Copied ${entry.siteName} password',
-                                        ),
-                                        backgroundColor: accentColor,
-                                        behavior: SnackBarBehavior.floating,
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Action Buttons
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton.icon(
-                                onPressed: () async {
-                                  final decryptedPassword =
-                                      EncryptionService.decryptPassword(
-                                        entry.password,
-                                      );
-                                  final result = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => EditEntryScreen(
-                                        initialSiteName: entry.siteName,
-                                        initialUsername: entry.username,
-                                        initialPassword: decryptedPassword,
-                                      ),
-                                    ),
-                                  );
-
-                                  if (result != null) {
-                                    _editEntry(
-                                      index,
-                                      result['siteName'],
-                                      result['username'],
-                                      result['password'],
-                                      result['email'],
-                                    );
-                                  }
-                                },
-                                icon: const Icon(Icons.edit_rounded, size: 18),
-                                label: const Text('Edit'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: const Color(0xFF3B82F6),
-                                ), // Light Blue
-                              ),
-                              const SizedBox(width: 8),
-                              TextButton.icon(
-                                onPressed: () => _confirmDelete(index),
-                                icon: const Icon(
-                                  Icons.delete_outline_rounded,
-                                  size: 18,
-                                ),
-                                label: const Text('Delete'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: const Color(0xFFF87171),
-                                ), // Red
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+            // Arrow
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF475569),
+              size: 22,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SETTINGS TAB
+// ─────────────────────────────────────────────────────────────────────────────
+class SettingsTab extends StatefulWidget {
+  const SettingsTab({super.key});
+
+  @override
+  State<SettingsTab> createState() => _SettingsTabState();
+}
+
+class _SettingsTabState extends State<SettingsTab> {
+  final _currentPinController = TextEditingController();
+  final _newPinController = TextEditingController();
+  final _confirmPinController = TextEditingController();
+  static const _pinKey = 'master_pin';
+
+  bool _currentVisible = false;
+  bool _newVisible = false;
+  bool _confirmVisible = false;
+  String _message = '';
+  bool _isSuccess = false;
+
+  @override
+  void dispose() {
+    _currentPinController.dispose();
+    _newPinController.dispose();
+    _confirmPinController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePin() async {
+    final currentPin = _currentPinController.text.trim();
+    final newPin = _newPinController.text.trim();
+    final confirmPin = _confirmPinController.text.trim();
+
+    if (currentPin.isEmpty || newPin.isEmpty || confirmPin.isEmpty) {
+      setState(() {
+        _message = 'Please fill in all fields.';
+        _isSuccess = false;
+      });
+      return;
+    }
+    if (newPin.length != 4 || !RegExp(r'^\d{4}$').hasMatch(newPin)) {
+      setState(() {
+        _message = 'New PIN must be exactly 4 digits.';
+        _isSuccess = false;
+      });
+      return;
+    }
+    if (newPin != confirmPin) {
+      setState(() {
+        _message = 'New PINs do not match.';
+        _isSuccess = false;
+      });
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final savedPin = prefs.getString(_pinKey) ?? '1234';
+
+    if (currentPin != savedPin) {
+      setState(() {
+        _message = 'Current PIN is incorrect.';
+        _isSuccess = false;
+      });
+      return;
+    }
+
+    await prefs.setString(_pinKey, newPin);
+    _currentPinController.clear();
+    _newPinController.clear();
+    _confirmPinController.clear();
+    setState(() {
+      _message = 'PIN changed successfully!';
+      _isSuccess = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0F172A), Color(0xFF000000)],
+        ),
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.settings_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    'Settings',
+                    style: TextStyle(
+                      fontSize: 28,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 36),
+              const Text(
+                'CHANGE MASTER PIN',
+                style: TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.04),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                ),
+                child: Column(
+                  children: [
+                    _buildPinField(
+                      controller: _currentPinController,
+                      label: 'Current PIN',
+                      isVisible: _currentVisible,
+                      onToggle: () =>
+                          setState(() => _currentVisible = !_currentVisible),
+                    ),
+                    Divider(
+                      height: 1,
+                      color: Colors.white.withOpacity(0.08),
+                      indent: 16,
+                    ),
+                    _buildPinField(
+                      controller: _newPinController,
+                      label: 'New PIN',
+                      isVisible: _newVisible,
+                      onToggle: () =>
+                          setState(() => _newVisible = !_newVisible),
+                    ),
+                    Divider(
+                      height: 1,
+                      color: Colors.white.withOpacity(0.08),
+                      indent: 16,
+                    ),
+                    _buildPinField(
+                      controller: _confirmPinController,
+                      label: 'Confirm PIN',
+                      isVisible: _confirmVisible,
+                      onToggle: () =>
+                          setState(() => _confirmVisible = !_confirmVisible),
+                    ),
+                  ],
+                ),
+              ),
+              if (_message.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _isSuccess
+                        ? const Color(0xFF10B981).withOpacity(0.1)
+                        : const Color(0xFFEF4444).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _isSuccess
+                          ? const Color(0xFF10B981).withOpacity(0.3)
+                          : const Color(0xFFEF4444).withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isSuccess
+                            ? Icons.check_circle_rounded
+                            : Icons.error_rounded,
+                        color: _isSuccess
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        _message,
+                        style: TextStyle(
+                          color: _isSuccess
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFF87171),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _changePin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Update PIN',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+              const Text(
+                'ABOUT',
+                style: TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.04),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                ),
+                child: Column(
+                  children: [
+                    _buildInfoRow('App', 'KeySafe'),
+                    Divider(height: 20, color: Colors.white.withOpacity(0.08)),
+                    _buildInfoRow('Version', '1.0.0'),
+                    Divider(height: 20, color: Colors.white.withOpacity(0.08)),
+                    _buildInfoRow('Encryption', 'AES-256 CBC'),
+                    Divider(height: 20, color: Colors.white.withOpacity(0.08)),
+                    _buildInfoRow('Storage', 'Local (SharedPreferences)'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPinField({
+    required TextEditingController controller,
+    required String label,
+    required bool isVisible,
+    required VoidCallback onToggle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              obscureText: !isVisible,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+              decoration: InputDecoration(
+                counterText: '',
+                hintText: '••••',
+                hintStyle: TextStyle(
+                  color: const Color(0xFF64748B).withOpacity(0.5),
+                ),
+                border: InputBorder.none,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    isVisible
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                    color: const Color(0xFF64748B),
+                    size: 20,
+                  ),
+                  onPressed: onToggle,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }
