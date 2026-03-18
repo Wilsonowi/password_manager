@@ -14,6 +14,7 @@ class PasswordEntry {
   String username;
   String password;
   String url;
+  List<Map<String, String>> securityQuestions;
 
   PasswordEntry({
     required this.email,
@@ -21,6 +22,7 @@ class PasswordEntry {
     required this.username,
     required this.password,
     required this.url,
+    this.securityQuestions = const [],
   });
 
   Map<String, dynamic> toJson() {
@@ -30,6 +32,7 @@ class PasswordEntry {
       'password': password,
       'email': email,
       'url': url,
+      'securityQuestions': securityQuestions,
     };
   }
 
@@ -40,6 +43,9 @@ class PasswordEntry {
       username: json['username'],
       password: json['password'],
       url: json['url'] ?? '',
+      securityQuestions: (json['securityQuestions'] as List? ?? [])
+          .map((e) => Map<String, String>.from(e))
+          .toList(),
     );
   }
 }
@@ -152,10 +158,26 @@ class _PasswordsTabState extends State<PasswordsTab> {
   List<PasswordEntry> _entries = [];
   List<bool> _passwordVisible = [];
 
+  // ── Bug 1 fixed: renamed to _isSearching and _searchQuery (with underscore) ──
+  bool _isSearching = false;
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
     _loadEntries();
+  }
+
+  // ── Bug 2 fixed: added missing _filteredEntries getter ──
+  List<PasswordEntry> get _filteredEntries {
+    if (_searchQuery.isEmpty) return _entries;
+    return _entries.where((entry) {
+      return entry.siteName.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
+          entry.username.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          entry.email.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
   }
 
   void _addEntry(
@@ -164,6 +186,7 @@ class _PasswordsTabState extends State<PasswordsTab> {
     String password,
     String email,
     String url,
+    List<Map<String, String>> securityQuestions,
   ) {
     setState(() {
       _entries.add(
@@ -173,6 +196,7 @@ class _PasswordsTabState extends State<PasswordsTab> {
           email: email,
           password: EncryptionService.encryptPassword(password),
           url: url,
+          securityQuestions: securityQuestions,
         ),
       );
       _passwordVisible.add(false);
@@ -187,6 +211,7 @@ class _PasswordsTabState extends State<PasswordsTab> {
     String password,
     String email,
     String url,
+    List<Map<String, String>> securityQuestions,
   ) {
     setState(() {
       _entries[index].siteName = siteName;
@@ -194,6 +219,7 @@ class _PasswordsTabState extends State<PasswordsTab> {
       _entries[index].email = email;
       _entries[index].password = EncryptionService.encryptPassword(password);
       _entries[index].url = url;
+      _entries[index].securityQuestions = securityQuestions;
     });
     _saveEntries();
   }
@@ -302,7 +328,7 @@ class _PasswordsTabState extends State<PasswordsTab> {
           children: [
             // ── Header ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
               child: Row(
                 children: [
                   Container(
@@ -329,39 +355,134 @@ class _PasswordsTabState extends State<PasswordsTab> {
                     ),
                   ),
                   const Spacer(),
-                  // Entry count badge
-                  if (_entries.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${_entries.length} saved',
-                        style: const TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+
+                  // ── Count badge + search icon ──
+                  Row(
+                    children: [
+                      if (_entries.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${_entries.length} saved',
+                            style: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      // ── Bug 3 fixed: correctly references _isSearching ──
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _isSearching = !_isSearching;
+                          if (!_isSearching)
+                            _searchQuery = ''; // clear on close
+                        }),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: _isSearching
+                                ? const Color(0xFF2563EB).withOpacity(0.2)
+                                : Colors.white.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: _isSearching
+                                  ? const Color(0xFF2563EB).withOpacity(0.4)
+                                  : Colors.white.withOpacity(0.08),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.search_rounded,
+                            color: _isSearching
+                                ? const Color(0xFF3B82F6)
+                                : const Color(0xFF64748B),
+                            size: 18,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
+                  ),
                 ],
               ),
             ),
 
+            // ── Search bar — only shows when _isSearching is true ──
+            if (_isSearching)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.search_rounded,
+                        color: Color(0xFF64748B),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          autofocus: true,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search passwords...',
+                            hintStyle: TextStyle(
+                              color: const Color(0xFF64748B).withOpacity(0.8),
+                              fontSize: 14,
+                            ),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onChanged: (value) =>
+                              setState(() => _searchQuery = value),
+                        ),
+                      ),
+                      if (_searchQuery.isNotEmpty)
+                        GestureDetector(
+                          onTap: () => setState(() => _searchQuery = ''),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            color: Color(0xFF64748B),
+                            size: 16,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
             // ── Entry list ──
             Expanded(
-              child: _entries.isEmpty
+              child: _filteredEntries.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
                       padding: const EdgeInsets.only(top: 8, bottom: 16),
-                      itemCount: _entries.length,
-                      itemBuilder: (context, index) =>
-                          _buildCard(_entries[index], index),
+                      itemCount: _filteredEntries.length,
+                      itemBuilder: (context, index) {
+                        final entry = _filteredEntries[index];
+                        // map filtered index back to real index for edit/delete
+                        final realIndex = _entries.indexOf(entry);
+                        return _buildCard(entry, realIndex);
+                      },
                     ),
             ),
 
@@ -386,6 +507,9 @@ class _PasswordsTabState extends State<PasswordsTab> {
                         result['password'],
                         result['email'] ?? '',
                         result['url'] ?? '',
+                        (result['securityQuestions'] as List? ?? []) // ← add
+                            .map((e) => Map<String, String>.from(e))
+                            .toList(),
                       );
                     }
                   },
@@ -421,36 +545,38 @@ class _PasswordsTabState extends State<PasswordsTab> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.lock_outline_rounded,
+            _searchQuery.isNotEmpty
+                ? Icons.search_off_rounded
+                : Icons.lock_outline_rounded,
             size: 72,
             color: Colors.white.withOpacity(0.1),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'No Passwords Saved',
-            style: TextStyle(
+          Text(
+            _searchQuery.isNotEmpty ? 'No results found' : 'No Passwords Saved',
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Tap the button below to add your passwords.',
-            style: TextStyle(color: Color(0xFF94A3B8)),
+          Text(
+            _searchQuery.isNotEmpty
+                ? ''
+                : 'Tap the button below to add your passwords.',
+            style: const TextStyle(color: Color(0xFF94A3B8)),
           ),
         ],
       ),
     );
   }
 
-  // ── Simple card — tap opens ViewEntryScreen ──
   Widget _buildCard(PasswordEntry entry, int index) {
     final Color accentColor = _getColorForSite(entry.siteName);
 
     return GestureDetector(
       onTap: () async {
-        // Navigate to detail page, wait for action result
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
@@ -462,6 +588,7 @@ class _PasswordsTabState extends State<PasswordsTab> {
               url: entry.url,
               accentColor: accentColor,
               index: index,
+              securityQuestions: entry.securityQuestions,
             ),
           ),
         );
@@ -478,6 +605,9 @@ class _PasswordsTabState extends State<PasswordsTab> {
               data['password'],
               data['email'] ?? entry.email,
               data['url'] ?? '',
+              (data['securityQuestions'] as List? ?? [])
+                  .map((e) => Map<String, String>.from(e))
+                  .toList(),
             );
           }
         }
@@ -492,7 +622,6 @@ class _PasswordsTabState extends State<PasswordsTab> {
         ),
         child: Row(
           children: [
-            // Site initial icon
             Container(
               width: 52,
               height: 52,
@@ -518,8 +647,6 @@ class _PasswordsTabState extends State<PasswordsTab> {
               ),
             ),
             const SizedBox(width: 16),
-
-            // Site name + username
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,8 +671,6 @@ class _PasswordsTabState extends State<PasswordsTab> {
                 ],
               ),
             ),
-
-            // Arrow
             const Icon(
               Icons.chevron_right_rounded,
               color: Color(0xFF475569),

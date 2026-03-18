@@ -6,6 +6,7 @@ class EditEntryScreen extends StatefulWidget {
   final String initialEmail;
   final String initialPassword;
   final String initialUrl;
+  final List<Map<String, String>> initialSecurityQuestions;
 
   const EditEntryScreen({
     super.key,
@@ -14,6 +15,7 @@ class EditEntryScreen extends StatefulWidget {
     required this.initialPassword,
     required this.initialEmail,
     required this.initialUrl,
+    this.initialSecurityQuestions = const [],
   });
 
   @override
@@ -27,6 +29,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
   late TextEditingController _emailController;
   late TextEditingController _urlController;
   bool _passwordVisible = false;
+  late List<Map<String, String>> _securityQuestions;
 
   @override
   void initState() {
@@ -36,6 +39,20 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     _passwordController = TextEditingController(text: widget.initialPassword);
     _emailController = TextEditingController(text: widget.initialEmail);
     _urlController = TextEditingController(text: widget.initialUrl);
+    _securityQuestions = widget.initialSecurityQuestions
+        .map((e) => Map<String, String>.from(e))
+        .toList();
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$').hasMatch(email);
+  }
+
+  bool _isValidUrl(String url) {
+    if (url.isEmpty) return true;
+    return url.startsWith('http://') ||
+        url.startsWith('https://') ||
+        url.startsWith('www.');
   }
 
   @override
@@ -54,6 +71,14 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
     final email = _emailController.text.trim();
+    String url = _urlController.text.trim();
+
+    if (url.isNotEmpty &&
+        !url.startsWith('http://') &&
+        !url.startsWith('https://') &&
+        !url.startsWith('www.')) {
+      url = 'https://$url';
+    }
 
     if (site.isEmpty || username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +110,32 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
       'password': password,
       'email': email,
       'url': _urlController.text.trim(),
+      'securityQuestions': _securityQuestions,
     });
+  }
+
+  Widget _buildWarning(String message) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 14,
+            color: Color(0xFFF59E0B),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            message,
+            style: const TextStyle(
+              color: Color(0xFFF59E0B),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -170,8 +220,6 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
                     ),
                   ),
                 ),
-
-                // ── Fields container ──
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.04),
@@ -186,20 +234,35 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
                         hint: 'e.g. Google, Netflix',
                         icon: Icons.language_rounded,
                       ),
-                      _buildDivider(),
-                      _buildField(
-                        controller: _urlController,
-                        label: 'URL',
-                        hint: 'https://google.com',
-                        icon: Icons.link_rounded,
-                        keyboardType: TextInputType.url,
-                      ),
+
                       _buildDivider(),
                       _buildField(
                         controller: _usernameController,
                         label: 'Username',
                         hint: 'Your username',
                         icon: Icons.person_rounded,
+                      ),
+                      _buildDivider(),
+                      _buildField(
+                        controller: _emailController,
+                        label: 'Email',
+                        hint: 'example@email.com',
+                        icon: Icons.email_rounded,
+                        keyboardType: TextInputType.emailAddress,
+                        onChanged: (_) => setState(
+                          () {},
+                        ), // ← triggers warning to appear live
+                      ),
+                      _buildDivider(),
+                      _buildField(
+                        controller: _urlController,
+                        label: 'URL',
+                        hint: 'https://example.com',
+                        icon: Icons.link_rounded,
+                        keyboardType: TextInputType.url,
+                        onChanged: (_) => setState(
+                          () {},
+                        ), // ← triggers warning to appear live
                       ),
                       _buildDivider(),
                       _buildField(
@@ -213,9 +276,192 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                if (_emailController.text.isNotEmpty &&
+                    !_isValidEmail(_emailController.text))
+                  _buildWarning(
+                    'Invalid email format  (e.g. name@example.com)',
+                  ),
 
-                // ── Save button ──
+                if (_urlController.text.isNotEmpty &&
+                    !_isValidUrl(_urlController.text))
+                  _buildWarning('URL should start with https:// or http://'),
+
+                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'SECURITY QUESTIONS',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    // Add new Q&A button
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _securityQuestions.add({
+                            'question': '',
+                            'answer': '',
+                          });
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF2563EB).withOpacity(0.3),
+                          ),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.add_rounded,
+                              size: 14,
+                              color: Color(0xFF3B82F6),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Add',
+                              style: TextStyle(
+                                color: Color(0xFF3B82F6),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // ── Q&A pairs list ──
+                ..._securityQuestions.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final qa = entry.value;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.04),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: Column(
+                      children: [
+                        // Question field
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.help_outline_rounded,
+                                size: 16,
+                                color: Color(0xFF2563EB),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextField(
+                                  style: const TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 14,
+                                  ),
+                                  controller:
+                                      TextEditingController(
+                                          text: qa['question'],
+                                        )
+                                        ..selection = TextSelection.collapsed(
+                                          offset: qa['question']?.length ?? 0,
+                                        ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Security question',
+                                    hintStyle: TextStyle(
+                                      color: const Color(
+                                        0xFF475569,
+                                      ).withOpacity(0.6),
+                                      fontSize: 13,
+                                    ),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                  ),
+                                  onChanged: (val) =>
+                                      _securityQuestions[i]['question'] = val,
+                                ),
+                              ),
+                              // Delete button
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 18,
+                                  color: Color(0xFF64748B),
+                                ),
+                                onPressed: () => setState(
+                                  () => _securityQuestions.removeAt(i),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Divider(
+                          height: 1,
+                          color: Colors.white.withOpacity(0.08),
+                          indent: 16,
+                        ),
+                        // Answer field
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.short_text_rounded,
+                                size: 16,
+                                color: Color(0xFF2563EB),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextField(
+                                  style: const TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 14,
+                                  ),
+                                  controller:
+                                      TextEditingController(text: qa['answer'])
+                                        ..selection = TextSelection.collapsed(
+                                          offset: qa['answer']?.length ?? 0,
+                                        ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Your answer',
+                                    hintStyle: TextStyle(
+                                      color: const Color(
+                                        0xFF475569,
+                                      ).withOpacity(0.6),
+                                      fontSize: 13,
+                                    ),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                  ),
+                                  onChanged: (val) =>
+                                      _securityQuestions[i]['answer'] = val,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+
                 SizedBox(
                   width: double.infinity,
                   height: 56,
@@ -229,6 +475,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
+
                     child: const Text(
                       'Save Changes',
                       style: TextStyle(
@@ -239,7 +486,6 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
               ],
             ),
@@ -264,6 +510,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     required IconData icon,
     bool isPassword = false,
     TextInputType keyboardType = TextInputType.text,
+    ValueChanged<String>? onChanged,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -287,6 +534,7 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
               controller: controller,
               obscureText: isPassword && !_passwordVisible,
               keyboardType: keyboardType,
+              onChanged: onChanged,
               style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 15),
               decoration: InputDecoration(
                 hintText: hint,

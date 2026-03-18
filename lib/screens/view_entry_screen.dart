@@ -11,6 +11,7 @@ class ViewEntryScreen extends StatelessWidget {
   final String url;
   final Color accentColor;
   final int index;
+  final List<Map<String, String>> securityQuestions;
 
   const ViewEntryScreen({
     super.key,
@@ -21,6 +22,7 @@ class ViewEntryScreen extends StatelessWidget {
     required this.url,
     required this.accentColor,
     required this.index,
+    required this.securityQuestions,
   });
 
   void _copy(BuildContext context, String text, String label) {
@@ -81,7 +83,7 @@ class ViewEntryScreen extends StatelessWidget {
                       initialEmail: email, // Passed email
                       initialPassword: decryptedPassword,
                       initialUrl: url,
-                      // Note: Pass initialUrl here if you added it to EditEntryScreen
+                      initialSecurityQuestions: securityQuestions,
                     ),
                   ),
                 );
@@ -218,7 +220,7 @@ class ViewEntryScreen extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: const Text(
-                    'ACCOUNT DETAILS',
+                    'DETAILS',
                     style: TextStyle(
                       color: Color(0xFF64748B),
                       fontSize: 12,
@@ -281,6 +283,71 @@ class ViewEntryScreen extends StatelessWidget {
 
                 const SizedBox(height: 40),
 
+                // ── Security Questions Section ──
+                if (securityQuestions.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'SECURITY QUESTIONS',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.03),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: Column(
+                      children: securityQuestions.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final qa = entry.value;
+                        return Column(
+                          children: [
+                            _buildDetailRow(
+                              context,
+                              icon: Icons.help_outline_rounded,
+                              label: 'Q${i + 1}',
+                              value: qa['question'] ?? '',
+                              onCopy: () => _copy(
+                                context,
+                                qa['question'] ?? '',
+                                'Question',
+                              ),
+                            ),
+                            Divider(
+                              height: 1,
+                              color: Colors.white.withOpacity(0.08),
+                              indent: 56,
+                            ),
+                            _buildDetailRow(
+                              context,
+                              icon: Icons.short_text_rounded,
+                              label: 'Answer',
+                              value: qa['answer'] ?? '',
+                              onCopy: () =>
+                                  _copy(context, qa['answer'] ?? '', 'Answer'),
+                            ),
+                            if (i < securityQuestions.length - 1)
+                              Divider(
+                                height: 1,
+                                color: Colors.white.withOpacity(0.15),
+                                indent: 16,
+                              ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+
                 // ── Delete Button ──
                 SizedBox(
                   width: double.infinity,
@@ -304,7 +371,7 @@ class ViewEntryScreen extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.delete_outline_rounded, size: 22),
                     label: const Text(
-                      'Delete Entry',
+                      'Delete Password',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
