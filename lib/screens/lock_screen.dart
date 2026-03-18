@@ -14,7 +14,6 @@ class _LockScreenState extends State<LockScreen> {
   // ── Logic: Variables ──
   String _enteredPin = '';
   List<bool> _revealed = [false, false, false, false];
-  final _hardcodedPin = '1234';
   String _message = 'Enter your PIN to continue';
   int _failedAttempts = 0;
   bool _isLockedOut = false;

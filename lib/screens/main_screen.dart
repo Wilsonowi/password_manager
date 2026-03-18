@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'add_entry_screen.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/encryption_service.dart';
-import 'edit_entries_screen.dart';
 import 'view_entry_screen.dart';
 
 // ── Data class ──
