@@ -326,7 +326,6 @@ class _LockScreenState extends State<LockScreen> {
           ),
           const SizedBox(height: 48),
 
-          // ── PIN Indicators ──
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(4, (i) {

@@ -22,6 +22,21 @@ class EditEntryScreen extends StatefulWidget {
   State<EditEntryScreen> createState() => _EditEntryScreenState();
 }
 
+// Returns 0 = weak, 1 = medium, 2 = strong
+int _getPasswordStrength(String password) {
+  if (password.isEmpty) return 0;
+
+  bool hasUpper = password.contains(RegExp(r'[A-Z]'));
+  bool hasLower = password.contains(RegExp(r'[a-z]'));
+  bool hasDigit = password.contains(RegExp(r'[0-9]'));
+  bool hasSpecial = password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'));
+  int types = [hasUpper, hasLower, hasDigit, hasSpecial].where((b) => b).length;
+
+  if (password.length >= 10 && types >= 4) return 2; // strong
+  if (password.length >= 6 && types >= 2) return 1; // medium
+  return 0; // weak
+}
+
 class _EditEntryScreenState extends State<EditEntryScreen> {
   late TextEditingController _siteController;
   late TextEditingController _usernameController;
@@ -138,6 +153,61 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     );
   }
 
+  Widget _buildStrengthBar(String password) {
+    if (password.isEmpty)
+      return const SizedBox.shrink(); // hide if nothing typed
+
+    final int strength = _getPasswordStrength(password);
+
+    final List<Color> colors = [
+      const Color(0xFFEF4444), // red   — weak
+      const Color(0xFFF59E0B), // amber — medium
+      const Color(0xFF10B981), // green — strong
+    ];
+
+    final List<String> labels = ['Weak', 'Medium', 'Strong'];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(
+        children: [
+          // ── 3 segment bar ──
+          ...List.generate(3, (i) {
+            return Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: 4,
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(2),
+                  color: i <= strength
+                      ? colors[strength] // filled segment
+                      : Colors.white.withOpacity(0.1), // empty segment
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(width: 10),
+
+          // ── Label ──
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Text(
+              labels[strength],
+              key: ValueKey(strength), // triggers animation on change
+              style: TextStyle(
+                color: colors[strength],
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -234,7 +304,17 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
                         hint: 'e.g. Google, Netflix',
                         icon: Icons.language_rounded,
                       ),
-
+                      _buildField(
+                        controller: _urlController,
+                        label: 'URL',
+                        hint: 'https://example.com',
+                        icon: Icons.link_rounded,
+                        keyboardType: TextInputType.url,
+                        onChanged: (_) => setState(
+                          () {},
+                        ), // ← triggers warning to appear live
+                      ),
+                      _buildDivider(),
                       _buildDivider(),
                       _buildField(
                         controller: _usernameController,
@@ -255,26 +335,20 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
                       ),
                       _buildDivider(),
                       _buildField(
-                        controller: _urlController,
-                        label: 'URL',
-                        hint: 'https://example.com',
-                        icon: Icons.link_rounded,
-                        keyboardType: TextInputType.url,
-                        onChanged: (_) => setState(
-                          () {},
-                        ), // ← triggers warning to appear live
-                      ),
-                      _buildDivider(),
-                      _buildField(
                         controller: _passwordController,
                         label: 'Password',
                         hint: 'Enter password',
                         icon: Icons.lock_rounded,
                         isPassword: true,
+                        onChanged: (value) => setState(
+                          () {},
+                        ), // ← triggers strength bar to update live
                       ),
                     ],
                   ),
                 ),
+
+                _buildStrengthBar(_passwordController.text),
 
                 if (_emailController.text.isNotEmpty &&
                     !_isValidEmail(_emailController.text))
