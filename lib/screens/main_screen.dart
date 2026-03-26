@@ -770,187 +770,204 @@ class _SettingsTabState extends State<SettingsTab> {
         ),
       ),
       child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.settings_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Text(
-                    'Settings',
-                    style: TextStyle(
-                      fontSize: 28,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 36),
-              const Text(
-                'CHANGE MASTER PIN',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.04),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
-                ),
-                child: Column(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    _buildPinField(
-                      controller: _currentPinController,
-                      label: 'Current PIN',
-                      isVisible: _currentVisible,
-                      onToggle: () =>
-                          setState(() => _currentVisible = !_currentVisible),
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.settings_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
-                    Divider(
-                      height: 1,
-                      color: Colors.white.withOpacity(0.08),
-                      indent: 16,
-                    ),
-                    _buildPinField(
-                      controller: _newPinController,
-                      label: 'New PIN',
-                      isVisible: _newVisible,
-                      onToggle: () =>
-                          setState(() => _newVisible = !_newVisible),
-                    ),
-                    Divider(
-                      height: 1,
-                      color: Colors.white.withOpacity(0.08),
-                      indent: 16,
-                    ),
-                    _buildPinField(
-                      controller: _confirmPinController,
-                      label: 'Confirm PIN',
-                      isVisible: _confirmVisible,
-                      onToggle: () =>
-                          setState(() => _confirmVisible = !_confirmVisible),
+                    const SizedBox(width: 16),
+                    const Text(
+                      'Settings',
+                      style: TextStyle(
+                        fontSize: 28,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              if (_message.isNotEmpty) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 36),
+                const Text(
+                  'CHANGE MASTER PIN',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
                   decoration: BoxDecoration(
-                    color: _isSuccess
-                        ? const Color(0xFF10B981).withOpacity(0.1)
-                        : const Color(0xFFEF4444).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _isSuccess
-                          ? const Color(0xFF10B981).withOpacity(0.3)
-                          : const Color(0xFFEF4444).withOpacity(0.3),
-                    ),
+                    color: Colors.white.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
                   ),
-                  child: Row(
+                  child: Column(
                     children: [
-                      Icon(
-                        _isSuccess
-                            ? Icons.check_circle_rounded
-                            : Icons.error_rounded,
-                        color: _isSuccess
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
-                        size: 18,
+                      _buildPinField(
+                        controller: _currentPinController,
+                        label: 'Current PIN',
+                        isVisible: _currentVisible,
+                        onToggle: () =>
+                            setState(() => _currentVisible = !_currentVisible),
                       ),
-                      const SizedBox(width: 10),
-                      Text(
-                        _message,
-                        style: TextStyle(
-                          color: _isSuccess
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFF87171),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Divider(
+                        height: 1,
+                        color: Colors.white.withOpacity(0.08),
+                        indent: 16,
+                      ),
+                      _buildPinField(
+                        controller: _newPinController,
+                        label: 'New PIN',
+                        isVisible: _newVisible,
+                        onToggle: () =>
+                            setState(() => _newVisible = !_newVisible),
+                      ),
+                      Divider(
+                        height: 1,
+                        color: Colors.white.withOpacity(0.08),
+                        indent: 16,
+                      ),
+                      _buildPinField(
+                        controller: _confirmPinController,
+                        label: 'Confirm PIN',
+                        isVisible: _confirmVisible,
+                        onToggle: () =>
+                            setState(() => _confirmVisible = !_confirmVisible),
                       ),
                     ],
                   ),
                 ),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _changePin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                if (_message.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _isSuccess
+                          ? const Color(0xFF10B981).withOpacity(0.1)
+                          : const Color(0xFFEF4444).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _isSuccess
+                            ? const Color(0xFF10B981).withOpacity(0.3)
+                            : const Color(0xFFEF4444).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _isSuccess
+                              ? Icons.check_circle_rounded
+                              : Icons.error_rounded,
+                          color: _isSuccess
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          _message,
+                          style: TextStyle(
+                            color: _isSuccess
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFF87171),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: const Text(
-                    'Update PIN',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _changePin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Update PIN',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 40),
-              const Text(
-                'ABOUT',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.5,
+                const SizedBox(height: 40),
+                const Text(
+                  'ABOUT',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.04),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildInfoRow('App', 'KeySafe'),
+                      Divider(
+                        height: 20,
+                        color: Colors.white.withOpacity(0.08),
+                      ),
+                      _buildInfoRow('Version', '1.0.0'),
+                      Divider(
+                        height: 20,
+                        color: Colors.white.withOpacity(0.08),
+                      ),
+                      _buildInfoRow('Encryption', 'AES-256 CBC'),
+                      Divider(
+                        height: 20,
+                        color: Colors.white.withOpacity(0.08),
+                      ),
+                      _buildInfoRow('Storage', 'Local (SharedPreferences)'),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _buildInfoRow('App', 'KeySafe'),
-                    Divider(height: 20, color: Colors.white.withOpacity(0.08)),
-                    _buildInfoRow('Version', '1.0.0'),
-                    Divider(height: 20, color: Colors.white.withOpacity(0.08)),
-                    _buildInfoRow('Encryption', 'AES-256 CBC'),
-                    Divider(height: 20, color: Colors.white.withOpacity(0.08)),
-                    _buildInfoRow('Storage', 'Local (SharedPreferences)'),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
