@@ -8,16 +8,19 @@ class AddEntryScreen extends StatefulWidget {
   State<AddEntryScreen> createState() => _AddEntryScreenState();
 }
 
+// Returns 0 = weak, 1 = medium, 2 = strong
 int _getPasswordStrength(String password) {
   if (password.isEmpty) return 0;
+
   bool hasUpper = password.contains(RegExp(r'[A-Z]'));
   bool hasLower = password.contains(RegExp(r'[a-z]'));
   bool hasDigit = password.contains(RegExp(r'[0-9]'));
   bool hasSpecial = password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'));
   int types = [hasUpper, hasLower, hasDigit, hasSpecial].where((b) => b).length;
-  if (password.length >= 10 && types >= 4) return 2;
-  if (password.length >= 6 && types >= 2) return 1;
-  return 0;
+
+  if (password.length >= 10 && types >= 4) return 2; // strong
+  if (password.length >= 6 && types >= 2) return 1; // medium
+  return 0; // weak
 }
 
 class _AddEntryScreenState extends State<AddEntryScreen> {
@@ -26,11 +29,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _urlController = TextEditingController();
-  final _notesController = TextEditingController();
-
   bool _passwordVisible = false;
   List<Map<String, String>> _securityQuestions = [];
-
+  final _notesController = TextEditingController();
   String _selectedCategory = 'General';
   final List<String> _categories = [
     'General',
@@ -38,7 +39,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     'Social',
     'Work',
     'Shopping',
-    'Streaming',
+    'Gaming',
   ];
 
   @override
@@ -48,8 +49,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     _passwordController.dispose();
     _emailController.dispose();
     _urlController.dispose();
-    _notesController.dispose();
     super.dispose();
+    _notesController.dispose();
   }
 
   void _onSave() {
@@ -113,12 +114,33 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       _passwordController.text = generated;
       _passwordVisible = true;
     });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white),
+            SizedBox(width: 12),
+            Text(
+              'Secure password generated!',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(20),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
-  bool _isValidEmail(String email) =>
-      RegExp(r'^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$').hasMatch(email);
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$').hasMatch(email);
+  }
+
   bool _isValidUrl(String url) {
-    if (url.isEmpty) return true;
+    if (url.isEmpty) return true; // URL is optional, empty is fine
     return url.startsWith('http://') ||
         url.startsWith('https://') ||
         url.startsWith('www.');
@@ -149,19 +171,24 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   }
 
   Widget _buildStrengthBar(String password) {
-    if (password.isEmpty) return const SizedBox.shrink();
+    if (password.isEmpty)
+      return const SizedBox.shrink(); // hide if nothing typed
+
     final int strength = _getPasswordStrength(password);
+
     final List<Color> colors = [
-      const Color(0xFFEF4444),
-      const Color(0xFFF59E0B),
-      const Color(0xFF10B981),
+      const Color(0xFFEF4444), // red   — weak
+      const Color(0xFFF59E0B), // amber — medium
+      const Color(0xFF10B981), // green — strong
     ];
+
     final List<String> labels = ['Weak', 'Medium', 'Strong'];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Row(
         children: [
+          // ── 3 segment bar ──
           ...List.generate(3, (i) {
             return Expanded(
               child: AnimatedContainer(
@@ -171,18 +198,21 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(2),
                   color: i <= strength
-                      ? colors[strength]
-                      : Colors.white.withOpacity(0.1),
+                      ? colors[strength] // filled segment
+                      : Colors.white.withOpacity(0.1), // empty segment
                 ),
               ),
             );
           }),
+
           const SizedBox(width: 10),
+
+          // ── Label ──
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: Text(
               labels[strength],
-              key: ValueKey(strength),
+              key: ValueKey(strength), // triggers animation on change
               style: TextStyle(
                 color: colors[strength],
                 fontSize: 12,
@@ -213,6 +243,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+
+      // ── Same gradient as main screen ──
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -220,7 +252,10 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF0F172A), Color(0xFF000000)],
+            colors: [
+              Color(0xFF0F172A), // Deep Slate
+              Color(0xFF000000), // Pure Black
+            ],
           ),
         ),
         child: SafeArea(
@@ -229,6 +264,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Icon Header ──
                 Center(
                   child: Container(
                     width: 72,
@@ -249,6 +285,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                 ),
                 const SizedBox(height: 32),
 
+                // ── Section Label ──
                 const Padding(
                   padding: EdgeInsets.only(left: 4, bottom: 10),
                   child: Text(
@@ -262,6 +299,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                   ),
                 ),
 
+                // ── Input Fields Container ──
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.04),
@@ -272,7 +310,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     children: [
                       _buildField(
                         controller: _siteController,
-                        label: 'App/Website',
+                        label: 'App/Website Name',
                         hint: 'Example: Google, Netflix',
                         icon: Icons.language_rounded,
                       ),
@@ -283,7 +321,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                         hint: 'https://example.com',
                         icon: Icons.link_rounded,
                         keyboardType: TextInputType.url,
-                        onChanged: (_) => setState(() {}),
+                        onChanged: (_) => setState(
+                          () {},
+                        ), // ← triggers warning to appear live
                       ),
                       _buildDivider(),
                       _buildField(
@@ -299,7 +339,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                         hint: 'example@email.com',
                         icon: Icons.email_rounded,
                         keyboardType: TextInputType.emailAddress,
-                        onChanged: (_) => setState(() {}),
+                        onChanged: (_) => setState(
+                          () {},
+                        ), // ← triggers warning to appear live
                       ),
                       _buildDivider(),
                       _buildField(
@@ -312,20 +354,23 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                       ),
                     ],
                   ),
-                ),
+                ), // ── Validation warnings ──
 
                 _buildStrengthBar(_passwordController.text),
+
                 if (_emailController.text.isNotEmpty &&
                     !_isValidEmail(_emailController.text))
                   _buildWarning(
                     'Invalid email format  (e.g. name@example.com)',
                   ),
+
                 if (_urlController.text.isNotEmpty &&
                     !_isValidUrl(_urlController.text))
                   _buildWarning(
                     'URL should start with https:// or http:// or www.',
                   ),
 
+                // ── Generate Password Button ──
                 const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
@@ -359,8 +404,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
+                // ── Category Selector ──
                 const Padding(
                   padding: EdgeInsets.only(left: 4, bottom: 10),
                   child: Text(
@@ -414,6 +459,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                 ),
 
                 const SizedBox(height: 24),
+                // ── Notes Field ──
                 const Padding(
                   padding: EdgeInsets.only(left: 4, bottom: 10),
                   child: Text(
@@ -437,10 +483,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     label: 'Notes',
                     hint: 'Optional details, PINs, etc.',
                     icon: Icons.note_alt_rounded,
-                    maxLines: 3,
+                    maxLines: 3, // Multi-line enabled!
                   ),
                 ),
-
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -454,13 +499,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                         letterSpacing: 1.5,
                       ),
                     ),
+                    // Enhanced Pill-shaped "Add New" button
                     GestureDetector(
-                      onTap: () => setState(
-                        () => _securityQuestions.add({
-                          'question': '',
-                          'answer': '',
-                        }),
-                      ),
+                      onTap: () {
+                        setState(() {
+                          _securityQuestions.add({
+                            'question': '',
+                            'answer': '',
+                          });
+                        });
+                      },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -497,22 +545,29 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                 ),
                 const SizedBox(height: 16),
 
+                // ── Redesigned Q&A cards ──
                 ..._securityQuestions.asMap().entries.map((entry) {
                   final i = entry.key;
                   final qa = entry.value;
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.04),
+                      color: Colors.white.withOpacity(
+                        0.04,
+                      ), // Matched background
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.08),
+                      ), // Matched border
                     ),
                     child: Column(
                       children: [
+                        // Question field
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
                           child: Row(
                             children: [
+                              // Matched icon
                               const Icon(
                                 Icons.help_outline_rounded,
                                 size: 18,
@@ -522,7 +577,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                               Expanded(
                                 child: TextField(
                                   style: const TextStyle(
-                                    color: Color(0xFF94A3B8),
+                                    color: Color(
+                                      0xFF94A3B8,
+                                    ), // Matched text color
                                     fontSize: 15,
                                   ),
                                   controller:
@@ -537,7 +594,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                                     hintStyle: TextStyle(
                                       color: const Color(
                                         0xFF475569,
-                                      ).withOpacity(0.6),
+                                      ).withOpacity(0.6), // Matched hint color
                                       fontSize: 14,
                                     ),
                                     border: InputBorder.none,
@@ -547,6 +604,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                                       _securityQuestions[i]['question'] = val,
                                 ),
                               ),
+                              // Red close/delete button
                               IconButton(
                                 icon: const Icon(
                                   Icons.close_rounded,
@@ -565,13 +623,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                         ),
                         Divider(
                           height: 1,
-                          color: Colors.white.withOpacity(0.08),
+                          color: Colors.white.withOpacity(
+                            0.08,
+                          ), // Matched divider
                           indent: 16,
                         ),
+                        // Answer field
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                           child: Row(
                             children: [
+                              // Matched icon
                               const Icon(
                                 Icons.key_rounded,
                                 size: 18,
@@ -581,7 +643,9 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                               Expanded(
                                 child: TextField(
                                   style: const TextStyle(
-                                    color: Color(0xFF94A3B8),
+                                    color: Color(
+                                      0xFF94A3B8,
+                                    ), // Matched text color
                                     fontSize: 15,
                                   ),
                                   controller:
@@ -594,7 +658,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                                     hintStyle: TextStyle(
                                       color: const Color(
                                         0xFF475569,
-                                      ).withOpacity(0.6),
+                                      ).withOpacity(0.6), // Matched hint color
                                       fontSize: 14,
                                     ),
                                     border: InputBorder.none,
@@ -614,6 +678,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
 
                 const SizedBox(height: 32),
 
+                // ── Save Button ──
                 SizedBox(
                   width: double.infinity,
                   child: GestureDetector(
@@ -632,11 +697,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                           BoxShadow(
                             color: const Color(0xFF2563EB).withOpacity(0.5),
                             blurRadius: 20,
+                            spreadRadius: 0,
                             offset: const Offset(0, 6),
                           ),
                           BoxShadow(
                             color: const Color(0xFF6366F1).withOpacity(0.3),
                             blurRadius: 40,
+                            spreadRadius: 0,
                             offset: const Offset(0, 10),
                           ),
                         ],
@@ -645,7 +712,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.check_circle_outline_rounded,
+                            Icons
+                                .check_circle_outline_rounded, // You can also use Icons.save_rounded
                             color: Colors.white,
                             size: 22,
                           ),
@@ -664,6 +732,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 20),
               ],
             ),
@@ -673,9 +742,16 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     );
   }
 
-  Widget _buildDivider() =>
-      Divider(height: 1, color: Colors.white.withOpacity(0.08), indent: 16);
+  // ── Divider between fields ──
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      color: Colors.white.withOpacity(0.08),
+      indent: 16,
+    );
+  }
 
+  // ── Input field with leading icon ──
   Widget _buildField({
     required TextEditingController controller,
     required String label,
@@ -690,8 +766,11 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
+          // Leading icon
           Icon(icon, size: 18, color: const Color(0xFF2563EB)),
           const SizedBox(width: 12),
+
+          // Label
           SizedBox(
             width: 80,
             child: Text(
@@ -703,13 +782,15 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
               ),
             ),
           ),
+
+          // Text input
           Expanded(
             child: TextField(
               controller: controller,
+              maxLines: maxLines,
               obscureText: isPassword && !_passwordVisible,
               keyboardType: keyboardType,
               onChanged: onChanged,
-              maxLines: maxLines,
               style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 15),
               decoration: InputDecoration(
                 hintText: hint,

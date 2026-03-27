@@ -6,7 +6,6 @@ import '../services/encryption_service.dart';
 import 'view_entry_screen.dart';
 import 'lock_screen.dart';
 
-// ── Data class ──
 class PasswordEntry {
   String email;
   String siteName;
@@ -57,9 +56,6 @@ class PasswordEntry {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN SCREEN — bottom nav shell
-// ─────────────────────────────────────────────────────────────────────────────
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -155,9 +151,6 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PASSWORDS TAB
-// ─────────────────────────────────────────────────────────────────────────────
 class PasswordsTab extends StatefulWidget {
   const PasswordsTab({super.key});
 
@@ -765,9 +758,6 @@ class _PasswordsTabState extends State<PasswordsTab> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SETTINGS TAB
-// ─────────────────────────────────────────────────────────────────────────────
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
 

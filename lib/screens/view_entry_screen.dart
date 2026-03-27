@@ -3,11 +3,8 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/encryption_service.dart';
-import 'edit_entries_screen.dart'; // Ensure this matches your actual file name
+import 'edit_entries_screen.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GLOWING FAVICON WIDGET (With 4-second timeout)
-// ─────────────────────────────────────────────────────────────────────────────
 class GlowingFavicon extends StatefulWidget {
   final String url;
   final String fallbackName;
@@ -133,9 +130,6 @@ class _GlowingFaviconState extends State<GlowingFavicon> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// VIEW ENTRY SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
 class ViewEntryScreen extends StatelessWidget {
   final String siteName;
   final String username;
@@ -582,9 +576,6 @@ class ViewEntryScreen extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PASSWORD REVEAL CARD
-// ─────────────────────────────────────────────────────────────────────────────
 class _PasswordRevealCard extends StatefulWidget {
   final String password;
   final Color accentColor;

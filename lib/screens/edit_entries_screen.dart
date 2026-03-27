@@ -57,7 +57,6 @@ class _EditEntryScreenState extends State<EditEntryScreen> {
     'Shopping',
     'Streaming',
   ];
-
   @override
   void initState() {
     super.initState();

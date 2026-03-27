@@ -31,7 +31,6 @@ class _LockScreenState extends State<LockScreen> {
     super.dispose();
   }
 
-  // ── Logic: Key Tap ──
   void _onKeyTap(String digit) {
     if (_enteredPin.length >= 4) return;
     int index = _enteredPin.length;
@@ -47,7 +46,6 @@ class _LockScreenState extends State<LockScreen> {
     }
   }
 
-  // ── Logic: Delete ──
   void _onDelete() {
     if (_enteredPin.isEmpty) return;
     setState(() {
@@ -57,7 +55,6 @@ class _LockScreenState extends State<LockScreen> {
     });
   }
 
-  // ── Logic: Verify PIN ──
   Future<void> _verifyPin() async {
     final prefs = await SharedPreferences.getInstance();
     final savedPin = prefs.getString('master_pin') ?? '1234';
@@ -82,7 +79,6 @@ class _LockScreenState extends State<LockScreen> {
     }
   }
 
-  // ── Logic: Lockout ──
   Future<void> _startLockout() async {
     final prefs = await SharedPreferences.getInstance();
     final lockoutEnd = DateTime.now().add(const Duration(minutes: 5));
@@ -159,9 +155,6 @@ class _LockScreenState extends State<LockScreen> {
     );
   }
 
-  // ══════════════════════════════════════════
-  // LOCKOUT VIEW
-  // ══════════════════════════════════════════
   Widget _buildLockoutView() {
     int minutes = _lockoutRemaining ~/ 60;
     int seconds = _lockoutRemaining % 60;
@@ -253,9 +246,6 @@ class _LockScreenState extends State<LockScreen> {
     );
   }
 
-  // ══════════════════════════════════════════
-  // NORMAL KEYPAD VIEW
-  // ══════════════════════════════════════════
   Widget _buildNormalView() {
     return Column(
       children: [
@@ -265,11 +255,6 @@ class _LockScreenState extends State<LockScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // ─────────────────────────────────────
-              // LOGO SECTION
-              // To use your own logo, replace the inner Container+Icon with:
-              //   Image.asset('assets/logo.png', fit: BoxFit.cover)
-              // ─────────────────────────────────────
               Container(
                 width: 90,
                 height: 90,
@@ -308,9 +293,7 @@ class _LockScreenState extends State<LockScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 22),
-
               const Text(
                 'KeySafe',
                 style: TextStyle(
@@ -329,10 +312,7 @@ class _LockScreenState extends State<LockScreen> {
                   letterSpacing: 0.3,
                 ),
               ),
-
               const SizedBox(height: 52),
-
-              // ── PIN dots ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(4, (i) {
@@ -381,10 +361,7 @@ class _LockScreenState extends State<LockScreen> {
                   );
                 }),
               ),
-
               const SizedBox(height: 16),
-
-              // ── Message ──
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: Text(
@@ -403,8 +380,6 @@ class _LockScreenState extends State<LockScreen> {
             ],
           ),
         ),
-
-        // ── Bottom: Keypad ──
         Expanded(
           flex: 5,
           child: Column(
@@ -434,7 +409,6 @@ class _LockScreenState extends State<LockScreen> {
     );
   }
 
-  // ── UI: Keypad Row ──
   Widget _buildKeyRow(List<String> digits) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -447,7 +421,6 @@ class _LockScreenState extends State<LockScreen> {
     );
   }
 
-  // ── UI: Number Key ──
   Widget _buildKey(String digit) {
     return SizedBox(
       width: 80,
@@ -475,7 +448,6 @@ class _LockScreenState extends State<LockScreen> {
     );
   }
 
-  // ── UI: Backspace Key ──
   Widget _buildBackspaceKey() {
     return SizedBox(
       width: 80,
